@@ -184,7 +184,7 @@ openssl req -newkey rsa:2048 -nodes \
 
 cat <<'NEOY' > keys/agent-${var.instance.public_ip}.conf
 
-subjectAltName=DNS:${local.tls_role}.global.nomad,DNS:${local.tls_role}.dc1.consul,DNS:localhost,DNS:${var.instance.public_dns},DNS:active.vault.service.consul,IP:127.0.0.1,IP:${var.instance.private_ip},IP:${var.instance.public_ip}
+subjectAltName=DNS:${local.tls_role}.global.nomad,DNS:${local.tls_role}.dc1.consul,DNS:localhost,DNS:${var.instance.public_dns},DNS:vault.service.consul,DNS:active.vault.service.consul,IP:127.0.0.1,IP:${var.instance.private_ip},IP:${var.instance.public_ip}
 extendedKeyUsage = serverAuth, clientAuth
 basicConstraints = CA:FALSE
 keyUsage = digitalSignature, keyEncipherment

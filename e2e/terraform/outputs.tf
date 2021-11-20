@@ -26,6 +26,10 @@ ssh into servers with:
    ssh -i keys/${local.random_name}.pem ubuntu@${ip}
 %{endfor~}
 
+with csshx:
+
+  csshX --login ubuntu --ssh_args '-i keys/${local.random_name}.pem' %{for ip in aws_instance.server.*.public_ip~}${ip}%{endfor~}
+
 ssh into clients with:
 
 %{for ip in aws_instance.client_ubuntu_bionic_amd64.*.public_ip~}
@@ -34,6 +38,9 @@ ssh into clients with:
 %{for ip in aws_instance.client_windows_2016_amd64.*.public_ip~}
     ssh -i keys/${local.random_name}.pem Administrator@${ip}
 %{endfor~}
+
+with csshx:
+  csshX --login ubuntu --ssh_args '-i keys/${local.random_name}.pem' %{for ip in aws_instance.client_ubuntu_bionic_amd64.*.public_ip~}${ip} %{endfor~}
 
 EOM
 }

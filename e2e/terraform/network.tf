@@ -34,6 +34,14 @@ resource "aws_security_group" "primary" {
     cidr_blocks = [local.ingress_cidr]
   }
 
+  # Nomad RPC
+  ingress {
+    from_port   = 4647
+    to_port     = 4647
+    protocol    = "tcp"
+    cidr_blocks = [local.ingress_cidr]
+  }
+
   # Fabio
   ingress {
     from_port   = 9998
