@@ -25,22 +25,24 @@ func TestHTTP_CSIEndpointPlugin(t *testing.T) {
 		require.NoError(t, err)
 
 		resp := httptest.NewRecorder()
-		obj, err := s.Server.CSIPluginSpecificRequest(resp, req)
-		require.NoError(t, err)
-		require.Equal(t, 200, resp.Code)
+    for _, srv := range s.Servers {
+      obj, err := srv.CSIPluginSpecificRequest(resp, req)
+      require.NoError(t, err)
+      require.Equal(t, 200, resp.Code)
 
-		out, ok := obj.(*api.CSIPlugin)
-		require.True(t, ok)
+      out, ok := obj.(*api.CSIPlugin)
+      require.True(t, ok)
 
-		// ControllersExpected is 0 because this plugin was created without a job,
-		// which sets expected
-		require.Equal(t, 0, out.ControllersExpected)
-		require.Equal(t, 1, out.ControllersHealthy)
-		require.Len(t, out.Controllers, 1)
+      // ControllersExpected is 0 because this plugin was created without a job,
+      // which sets expected
+      require.Equal(t, 0, out.ControllersExpected)
+      require.Equal(t, 1, out.ControllersHealthy)
+      require.Len(t, out.Controllers, 1)
 
-		require.Equal(t, 0, out.NodesExpected)
-		require.Equal(t, 2, out.NodesHealthy)
-		require.Len(t, out.Nodes, 2)
+      require.Equal(t, 0, out.NodesExpected)
+      require.Equal(t, 2, out.NodesHealthy)
+      require.Len(t, out.Nodes, 2)
+    }
 	})
 }
 
@@ -79,13 +81,13 @@ func TestHTTP_CSIEndpointRegisterVolume(t *testing.T) {
 		req, err := http.NewRequest("PUT", "/v1/volumes", body)
 		require.NoError(t, err)
 		resp := httptest.NewRecorder()
-		_, err = s.Server.CSIVolumesRequest(resp, req)
+		_, err = s.Servers[0].CSIVolumesRequest(resp, req)
 		require.NoError(t, err, "put error")
 
 		req, err = http.NewRequest("GET", "/v1/volume/csi/bar", nil)
 		require.NoError(t, err)
 		resp = httptest.NewRecorder()
-		raw, err := s.Server.CSIVolumeSpecificRequest(resp, req)
+		raw, err := s.Servers[0].CSIVolumeSpecificRequest(resp, req)
 		require.NoError(t, err, "get error")
 		out, ok := raw.(*api.CSIVolume)
 		require.True(t, ok)
@@ -95,7 +97,7 @@ func TestHTTP_CSIEndpointRegisterVolume(t *testing.T) {
 		req, err = http.NewRequest("DELETE", "/v1/volume/csi/bar/detach", nil)
 		require.NoError(t, err)
 		resp = httptest.NewRecorder()
-		_, err = s.Server.CSIVolumeSpecificRequest(resp, req)
+		_, err = s.Servers[0].CSIVolumeSpecificRequest(resp, req)
 		require.Equal(t, CodedError(400, "detach requires node ID"), err)
 	})
 }
@@ -121,13 +123,13 @@ func TestHTTP_CSIEndpointCreateVolume(t *testing.T) {
 		req, err := http.NewRequest("PUT", "/v1/volumes/create", body)
 		require.NoError(t, err)
 		resp := httptest.NewRecorder()
-		_, err = s.Server.CSIVolumesRequest(resp, req)
+		_, err = s.Servers[0].CSIVolumesRequest(resp, req)
 		require.Error(t, err, "controller validate volume: No path to node")
 
 		req, err = http.NewRequest("DELETE", "/v1/volume/csi/baz", nil)
 		require.NoError(t, err)
 		resp = httptest.NewRecorder()
-		_, err = s.Server.CSIVolumeSpecificRequest(resp, req)
+		_, err = s.Servers[0].CSIVolumeSpecificRequest(resp, req)
 		require.Error(t, err, "volume not found: baz")
 	})
 }
@@ -150,7 +152,7 @@ func TestHTTP_CSIEndpointSnapshot(t *testing.T) {
 		req, err := http.NewRequest("PUT", "/v1/volumes/snapshot", body)
 		require.NoError(t, err)
 		resp := httptest.NewRecorder()
-		_, err = s.Server.CSISnapshotsRequest(resp, req)
+		_, err = s.Servers[0].CSISnapshotsRequest(resp, req)
 		require.Error(t, err, "no such volume: bar")
 	})
 }

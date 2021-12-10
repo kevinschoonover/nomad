@@ -120,8 +120,10 @@ func TestHTTP_FS_List_MissingParams(t *testing.T) {
 		req, err := http.NewRequest("GET", "/v1/client/fs/ls/", nil)
 		require.Nil(err)
 		respW := httptest.NewRecorder()
-		_, err = s.Server.DirectoryListRequest(respW, req)
-		require.EqualError(err, allocIDNotPresentErr.Error())
+    for _, srv := range s.Servers {
+      _, err = srv.DirectoryListRequest(respW, req)
+      require.EqualError(err, allocIDNotPresentErr.Error())
+    }
 	})
 }
 
@@ -133,15 +135,19 @@ func TestHTTP_FS_Stat_MissingParams(t *testing.T) {
 		require.Nil(err)
 		respW := httptest.NewRecorder()
 
-		_, err = s.Server.FileStatRequest(respW, req)
-		require.EqualError(err, allocIDNotPresentErr.Error())
+    for _, srv := range s.Servers {
+      _, err = srv.FileStatRequest(respW, req)
+      require.EqualError(err, allocIDNotPresentErr.Error())
+    }
 
 		req, err = http.NewRequest("GET", "/v1/client/fs/stat/foo", nil)
 		require.Nil(err)
 		respW = httptest.NewRecorder()
 
-		_, err = s.Server.FileStatRequest(respW, req)
-		require.EqualError(err, fileNameNotPresentErr.Error())
+    for _, srv := range s.Servers {
+      _, err = srv.FileStatRequest(respW, req)
+      require.EqualError(err, fileNameNotPresentErr.Error())
+    }
 	})
 }
 
@@ -152,20 +158,26 @@ func TestHTTP_FS_ReadAt_MissingParams(t *testing.T) {
 		req, err := http.NewRequest("GET", "/v1/client/fs/readat/", nil)
 		require.NoError(err)
 
-		_, err = s.Server.FileReadAtRequest(httptest.NewRecorder(), req)
-		require.Error(err)
+    for _, srv := range s.Servers {
+      _, err = srv.FileReadAtRequest(httptest.NewRecorder(), req)
+      require.Error(err)
+    }
 
 		req, err = http.NewRequest("GET", "/v1/client/fs/readat/foo", nil)
 		require.NoError(err)
 
-		_, err = s.Server.FileReadAtRequest(httptest.NewRecorder(), req)
-		require.Error(err)
+    for _, srv := range s.Servers {
+      _, err = srv.FileReadAtRequest(httptest.NewRecorder(), req)
+      require.Error(err)
+    }
 
 		req, err = http.NewRequest("GET", "/v1/client/fs/readat/foo?path=/path/to/file", nil)
 		require.NoError(err)
 
-		_, err = s.Server.FileReadAtRequest(httptest.NewRecorder(), req)
-		require.Error(err)
+    for _, srv := range s.Servers {
+      _, err = srv.FileReadAtRequest(httptest.NewRecorder(), req)
+      require.Error(err)
+    }
 	})
 }
 
@@ -177,15 +189,19 @@ func TestHTTP_FS_Cat_MissingParams(t *testing.T) {
 		require.Nil(err)
 		respW := httptest.NewRecorder()
 
-		_, err = s.Server.FileCatRequest(respW, req)
-		require.EqualError(err, allocIDNotPresentErr.Error())
+    for _, srv := range s.Servers {
+      _, err = srv.FileCatRequest(respW, req)
+      require.EqualError(err, allocIDNotPresentErr.Error())
+    }
 
 		req, err = http.NewRequest("GET", "/v1/client/fs/stat/foo", nil)
 		require.Nil(err)
 		respW = httptest.NewRecorder()
 
-		_, err = s.Server.FileCatRequest(respW, req)
-		require.EqualError(err, fileNameNotPresentErr.Error())
+    for _, srv := range s.Servers {
+      _, err = srv.FileCatRequest(respW, req)
+      require.EqualError(err, fileNameNotPresentErr.Error())
+    }
 	})
 }
 
@@ -197,23 +213,29 @@ func TestHTTP_FS_Stream_MissingParams(t *testing.T) {
 		require.NoError(err)
 		respW := httptest.NewRecorder()
 
-		_, err = s.Server.Stream(respW, req)
-		require.EqualError(err, allocIDNotPresentErr.Error())
+    for _, srv := range s.Servers {
+      _, err = srv.Stream(respW, req)
+      require.EqualError(err, allocIDNotPresentErr.Error())
+    }
 
 		req, err = http.NewRequest("GET", "/v1/client/fs/stream/foo", nil)
 		require.NoError(err)
 		respW = httptest.NewRecorder()
 
-		_, err = s.Server.Stream(respW, req)
-		require.EqualError(err, fileNameNotPresentErr.Error())
+    for _, srv := range s.Servers {
+      _, err = srv.Stream(respW, req)
+      require.EqualError(err, fileNameNotPresentErr.Error())
+    }
 
 		req, err = http.NewRequest("GET", "/v1/client/fs/stream/foo?path=/path/to/file", nil)
 		require.NoError(err)
 		respW = httptest.NewRecorder()
 
-		_, err = s.Server.Stream(respW, req)
-		require.Error(err)
-		require.Contains(err.Error(), "alloc lookup failed")
+    for _, srv := range s.Servers {
+      _, err = srv.Stream(respW, req)
+      require.Error(err)
+      require.Contains(err.Error(), "alloc lookup failed")
+    }
 	})
 }
 
@@ -228,36 +250,44 @@ func TestHTTP_FS_Logs_MissingParams(t *testing.T) {
 		require.NoError(err)
 		respW := httptest.NewRecorder()
 
-		s.Server.mux.ServeHTTP(respW, req)
-		require.Equal(respW.Body.String(), allocIDNotPresentErr.Error())
-		require.Equal(400, respW.Code)
+    for _, srv := range s.Servers {
+      srv.mux.ServeHTTP(respW, req)
+      require.Equal(respW.Body.String(), allocIDNotPresentErr.Error())
+      require.Equal(400, respW.Code)
+    }
 
 		// Task Not Present
 		req, err = http.NewRequest("GET", "/v1/client/fs/logs/foo", nil)
 		require.NoError(err)
 		respW = httptest.NewRecorder()
 
-		s.Server.mux.ServeHTTP(respW, req)
-		require.Equal(respW.Body.String(), taskNotPresentErr.Error())
-		require.Equal(400, respW.Code)
+    for _, srv := range s.Servers {
+      srv.mux.ServeHTTP(respW, req)
+      require.Equal(respW.Body.String(), taskNotPresentErr.Error())
+      require.Equal(400, respW.Code)
+    }
 
 		// Log Type Not Present
 		req, err = http.NewRequest("GET", "/v1/client/fs/logs/foo?task=foo", nil)
 		require.NoError(err)
 		respW = httptest.NewRecorder()
 
-		s.Server.mux.ServeHTTP(respW, req)
-		require.Equal(respW.Body.String(), logTypeNotPresentErr.Error())
-		require.Equal(400, respW.Code)
+    for _, srv := range s.Servers {
+      srv.mux.ServeHTTP(respW, req)
+      require.Equal(respW.Body.String(), logTypeNotPresentErr.Error())
+      require.Equal(400, respW.Code)
+    }
 
 		// case where all parameters are set but alloc isn't found
 		req, err = http.NewRequest("GET", "/v1/client/fs/logs/foo?task=foo&type=stdout", nil)
 		require.NoError(err)
 		respW = httptest.NewRecorder()
 
-		s.Server.mux.ServeHTTP(respW, req)
-		require.Equal(500, respW.Code)
-		require.Contains(respW.Body.String(), "alloc lookup failed")
+    for _, srv := range s.Servers {
+      srv.mux.ServeHTTP(respW, req)
+      require.Equal(500, respW.Code)
+      require.Contains(respW.Body.String(), "alloc lookup failed")
+    }
 	})
 }
 
@@ -271,13 +301,15 @@ func TestHTTP_FS_List(t *testing.T) {
 		req, err := http.NewRequest("GET", "/v1/client/fs/ls/"+a.ID, nil)
 		require.Nil(err)
 		respW := httptest.NewRecorder()
-		raw, err := s.Server.DirectoryListRequest(respW, req)
-		require.Nil(err)
+    for _, srv := range s.Servers {
+      raw, err := srv.DirectoryListRequest(respW, req)
+      require.Nil(err)
 
-		files, ok := raw.([]*cstructs.AllocFileInfo)
-		require.True(ok)
-		require.NotEmpty(files)
-		require.True(files[0].IsDir)
+      files, ok := raw.([]*cstructs.AllocFileInfo)
+      require.True(ok)
+      require.NotEmpty(files)
+      require.True(files[0].IsDir)
+    }
 	})
 }
 
@@ -292,13 +324,15 @@ func TestHTTP_FS_Stat(t *testing.T) {
 		req, err := http.NewRequest("GET", path, nil)
 		require.Nil(err)
 		respW := httptest.NewRecorder()
-		raw, err := s.Server.FileStatRequest(respW, req)
-		require.Nil(err)
+    for _, srv := range s.Servers {
+      raw, err := srv.FileStatRequest(respW, req)
+      require.Nil(err)
 
-		info, ok := raw.(*cstructs.AllocFileInfo)
-		require.True(ok)
-		require.NotNil(info)
-		require.True(info.IsDir)
+      info, ok := raw.(*cstructs.AllocFileInfo)
+      require.True(ok)
+      require.NotNil(info)
+      require.True(info.IsDir)
+    }
 	})
 }
 
@@ -318,12 +352,14 @@ func TestHTTP_FS_ReadAt(t *testing.T) {
 		req, err := http.NewRequest("GET", path, nil)
 		require.Nil(err)
 		respW := httptest.NewRecorder()
-		_, err = s.Server.FileReadAtRequest(respW, req)
-		require.Nil(err)
+    for _, srv := range s.Servers {
+      _, err = srv.FileReadAtRequest(respW, req)
+      require.Nil(err)
 
-		output, err := ioutil.ReadAll(respW.Result().Body)
-		require.Nil(err)
-		require.EqualValues(expectation, output)
+      output, err := ioutil.ReadAll(respW.Result().Body)
+      require.Nil(err)
+      require.EqualValues(expectation, output)
+    }
 	})
 }
 
@@ -334,21 +370,23 @@ func TestHTTP_FS_ReadAt_XSS(t *testing.T) {
 		a := mockFSAlloc(s.client.NodeID(), xssLoggerMockDriver)
 		addAllocToClient(s, a, terminalClientAlloc)
 
-		path := fmt.Sprintf("%s/v1/client/fs/readat/%s?path=alloc/logs/web.stdout.0&offset=0&limit=%d",
-			s.HTTPAddr(), a.ID, len(xssLoggerMockDriverStdout))
-		resp, err := http.DefaultClient.Get(path)
-		require.NoError(t, err)
-		defer resp.Body.Close()
+    for _, addr := range s.HTTPAddrs() {
+      path := fmt.Sprintf("%s/v1/client/fs/readat/%s?path=alloc/logs/web.stdout.0&offset=0&limit=%d",
+        addr, a.ID, len(xssLoggerMockDriverStdout))
+      resp, err := http.DefaultClient.Get(path)
+      require.NoError(t, err)
+      defer resp.Body.Close()
 
-		buf, err := ioutil.ReadAll(resp.Body)
-		require.NoError(t, err)
-		require.Equal(t, xssLoggerMockDriverStdout, string(buf))
+      buf, err := ioutil.ReadAll(resp.Body)
+      require.NoError(t, err)
+      require.Equal(t, xssLoggerMockDriverStdout, string(buf))
 
-		require.Equal(t, []string{"text/plain"}, resp.Header.Values("Content-Type"))
-		require.Equal(t, []string{"nosniff"}, resp.Header.Values("X-Content-Type-Options"))
-		require.Equal(t, []string{"1; mode=block"}, resp.Header.Values("X-XSS-Protection"))
-		require.Equal(t, []string{"default-src 'none'; style-src 'unsafe-inline'; sandbox"},
-			resp.Header.Values("Content-Security-Policy"))
+      require.Equal(t, []string{"text/plain"}, resp.Header.Values("Content-Type"))
+      require.Equal(t, []string{"nosniff"}, resp.Header.Values("X-Content-Type-Options"))
+      require.Equal(t, []string{"1; mode=block"}, resp.Header.Values("X-XSS-Protection"))
+      require.Equal(t, []string{"default-src 'none'; style-src 'unsafe-inline'; sandbox"},
+        resp.Header.Values("Content-Security-Policy"))
+    }
 	})
 }
 
@@ -364,12 +402,14 @@ func TestHTTP_FS_Cat(t *testing.T) {
 		req, err := http.NewRequest("GET", path, nil)
 		require.Nil(err)
 		respW := httptest.NewRecorder()
-		_, err = s.Server.FileCatRequest(respW, req)
-		require.Nil(err)
+    for _, srv := range s.Servers {
+      _, err = srv.FileCatRequest(respW, req)
+      require.Nil(err)
 
-		output, err := ioutil.ReadAll(respW.Result().Body)
-		require.Nil(err)
-		require.EqualValues(defaultLoggerMockDriverStdout, output)
+      output, err := ioutil.ReadAll(respW.Result().Body)
+      require.Nil(err)
+      require.EqualValues(defaultLoggerMockDriverStdout, output)
+    }
 	})
 }
 
@@ -380,20 +420,22 @@ func TestHTTP_FS_Cat_XSS(t *testing.T) {
 		a := mockFSAlloc(s.client.NodeID(), xssLoggerMockDriver)
 		addAllocToClient(s, a, terminalClientAlloc)
 
-		path := fmt.Sprintf("%s/v1/client/fs/cat/%s?path=alloc/logs/web.stdout.0", s.HTTPAddr(), a.ID)
-		resp, err := http.DefaultClient.Get(path)
-		require.NoError(t, err)
-		defer resp.Body.Close()
+    for _, addr := range s.HTTPAddrs() {
+      path := fmt.Sprintf("%s/v1/client/fs/cat/%s?path=alloc/logs/web.stdout.0", addr, a.ID)
+      resp, err := http.DefaultClient.Get(path)
+      require.NoError(t, err)
+      defer resp.Body.Close()
 
-		buf, err := ioutil.ReadAll(resp.Body)
-		require.NoError(t, err)
-		require.Equal(t, xssLoggerMockDriverStdout, string(buf))
+      buf, err := ioutil.ReadAll(resp.Body)
+      require.NoError(t, err)
+      require.Equal(t, xssLoggerMockDriverStdout, string(buf))
 
-		require.Equal(t, []string{"text/plain"}, resp.Header.Values("Content-Type"))
-		require.Equal(t, []string{"nosniff"}, resp.Header.Values("X-Content-Type-Options"))
-		require.Equal(t, []string{"1; mode=block"}, resp.Header.Values("X-XSS-Protection"))
-		require.Equal(t, []string{"default-src 'none'; style-src 'unsafe-inline'; sandbox"},
-			resp.Header.Values("Content-Security-Policy"))
+      require.Equal(t, []string{"text/plain"}, resp.Header.Values("Content-Type"))
+      require.Equal(t, []string{"nosniff"}, resp.Header.Values("X-Content-Type-Options"))
+      require.Equal(t, []string{"1; mode=block"}, resp.Header.Values("X-XSS-Protection"))
+      require.Equal(t, []string{"default-src 'none'; style-src 'unsafe-inline'; sandbox"},
+        resp.Header.Values("Content-Security-Policy"))
+    }
 	})
 }
 
@@ -415,7 +457,7 @@ func TestHTTP_FS_Stream_NoFollow(t *testing.T) {
 		respW := testutil.NewResponseRecorder()
 		doneCh := make(chan struct{})
 		go func() {
-			_, err = s.Server.Stream(respW, req)
+			_, err = s.Servers[0].Stream(respW, req)
 			require.Nil(err)
 			close(doneCh)
 		}()
@@ -448,16 +490,18 @@ func TestHTTP_FS_Stream_NoFollow_XSS(t *testing.T) {
 		a := mockFSAlloc(s.client.NodeID(), xssLoggerMockDriver)
 		addAllocToClient(s, a, terminalClientAlloc)
 
-		path := fmt.Sprintf("%s/v1/client/fs/stream/%s?path=alloc/logs/web.stdout.0&follow=false",
-			s.HTTPAddr(), a.ID)
-		resp, err := http.DefaultClient.Get(path)
-		require.NoError(t, err)
-		defer resp.Body.Close()
+    for _, addr := range s.HTTPAddrs() {
+      path := fmt.Sprintf("%s/v1/client/fs/stream/%s?path=alloc/logs/web.stdout.0&follow=false",
+        addr, a.ID)
+      resp, err := http.DefaultClient.Get(path)
+      require.NoError(t, err)
+      defer resp.Body.Close()
 
-		buf, err := ioutil.ReadAll(resp.Body)
-		require.NoError(t, err)
-		expected := `{"Data":"PHNjcmlwdD5hbGVydChkb2N1bWVudC5kb21haW4pOzwvc2NyaXB0Pg==","File":"alloc/logs/web.stdout.0","Offset":40}`
-		require.Equal(t, expected, string(buf))
+      buf, err := ioutil.ReadAll(resp.Body)
+      require.NoError(t, err)
+      expected := `{"Data":"PHNjcmlwdD5hbGVydChkb2N1bWVudC5kb21haW4pOzwvc2NyaXB0Pg==","File":"alloc/logs/web.stdout.0","Offset":40}`
+      require.Equal(t, expected, string(buf))
+    }
 	})
 }
 
@@ -479,7 +523,7 @@ func TestHTTP_FS_Stream_Follow(t *testing.T) {
 		respW := httptest.NewRecorder()
 		doneCh := make(chan struct{})
 		go func() {
-			_, err = s.Server.Stream(respW, req)
+			_, err = s.Servers[0].Stream(respW, req)
 			require.Nil(err)
 			close(doneCh)
 		}()
@@ -521,7 +565,7 @@ func TestHTTP_FS_Logs(t *testing.T) {
 		require.Nil(err)
 		respW := testutil.NewResponseRecorder()
 		go func() {
-			_, err = s.Server.Logs(respW, req)
+			_, err = s.Servers[0].Logs(respW, req)
 			require.Nil(err)
 		}()
 
@@ -551,16 +595,18 @@ func TestHTTP_FS_Logs_XSS(t *testing.T) {
 
 		// Must make a "real" request to ensure Go's default content
 		// type detection does not detect text/html
-		path := fmt.Sprintf("%s/v1/client/fs/logs/%s?type=stdout&task=web&plain=true", s.HTTPAddr(), a.ID)
-		resp, err := http.DefaultClient.Get(path)
-		require.NoError(t, err)
-		defer resp.Body.Close()
+    for _, addr := range s.HTTPAddrs() {
+      path := fmt.Sprintf("%s/v1/client/fs/logs/%s?type=stdout&task=web&plain=true", addr, a.ID)
+      resp, err := http.DefaultClient.Get(path)
+      require.NoError(t, err)
+      defer resp.Body.Close()
 
-		buf, err := ioutil.ReadAll(resp.Body)
-		require.NoError(t, err)
-		require.Equal(t, xssLoggerMockDriverStdout, string(buf))
+      buf, err := ioutil.ReadAll(resp.Body)
+      require.NoError(t, err)
+      require.Equal(t, xssLoggerMockDriverStdout, string(buf))
 
-		require.Equal(t, []string{"text/plain"}, resp.Header.Values("Content-Type"))
+      require.Equal(t, []string{"text/plain"}, resp.Header.Values("Content-Type"))
+    }
 	})
 }
 
@@ -581,7 +627,7 @@ func TestHTTP_FS_Logs_Follow(t *testing.T) {
 		respW := testutil.NewResponseRecorder()
 		errCh := make(chan error, 1)
 		go func() {
-			_, err := s.Server.Logs(respW, req)
+			_, err := s.Servers[0].Logs(respW, req)
 			errCh <- err
 		}()
 
@@ -616,10 +662,12 @@ func TestHTTP_FS_Logs_PropagatesErrors(t *testing.T) {
 		require.NoError(t, err)
 		respW := testutil.NewResponseRecorder()
 
-		_, err = s.Server.Logs(respW, req)
-		require.Error(t, err)
+    for _, srv := range s.Servers {
+      _, err = srv.Logs(respW, req)
+      require.Error(t, err)
 
-		_, ok := err.(HTTPCodedError)
-		require.Truef(t, ok, "expected a coded error but found: %#+v", err)
+      _, ok := err.(HTTPCodedError)
+      require.Truef(t, ok, "expected a coded error but found: %#+v", err)
+    }
 	})
 }

@@ -29,27 +29,29 @@ func TestHTTP_EvalList(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.EvalsRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.EvalsRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
-		if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
-			t.Fatalf("missing known leader")
-		}
-		if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
-			t.Fatalf("missing last contact")
-		}
+      // Check for the index
+      if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+        t.Fatalf("missing index")
+      }
+      if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
+        t.Fatalf("missing known leader")
+      }
+      if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
+        t.Fatalf("missing last contact")
+      }
 
-		// Check the eval
-		e := obj.([]*structs.Evaluation)
-		if len(e) != 2 {
-			t.Fatalf("bad: %#v", e)
-		}
+      // Check the eval
+      e := obj.([]*structs.Evaluation)
+      if len(e) != 2 {
+        t.Fatalf("bad: %#v", e)
+      }
+    }
 	})
 }
 
@@ -75,32 +77,34 @@ func TestHTTP_EvalPrefixList(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.EvalsRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.EvalsRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
-		if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
-			t.Fatalf("missing known leader")
-		}
-		if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
-			t.Fatalf("missing last contact")
-		}
+      // Check for the index
+      if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+        t.Fatalf("missing index")
+      }
+      if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
+        t.Fatalf("missing known leader")
+      }
+      if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
+        t.Fatalf("missing last contact")
+      }
 
-		// Check the eval
-		e := obj.([]*structs.Evaluation)
-		if len(e) != 1 {
-			t.Fatalf("bad: %#v", e)
-		}
+      // Check the eval
+      e := obj.([]*structs.Evaluation)
+      if len(e) != 1 {
+        t.Fatalf("bad: %#v", e)
+      }
 
-		// Check the identifier
-		if e[0].ID != eval2.ID {
-			t.Fatalf("expected eval ID: %v, Actual: %v", eval2.ID, e[0].ID)
-		}
+      // Check the identifier
+      if e[0].ID != eval2.ID {
+        t.Fatalf("expected eval ID: %v, Actual: %v", eval2.ID, e[0].ID)
+      }
+    }
 	})
 }
 
@@ -128,27 +132,29 @@ func TestHTTP_EvalAllocations(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.EvalSpecificRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.EvalSpecificRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
-		if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
-			t.Fatalf("missing known leader")
-		}
-		if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
-			t.Fatalf("missing last contact")
-		}
+      // Check for the index
+      if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+        t.Fatalf("missing index")
+      }
+      if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
+        t.Fatalf("missing known leader")
+      }
+      if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
+        t.Fatalf("missing last contact")
+      }
 
-		// Check the output
-		allocs := obj.([]*structs.AllocListStub)
-		if len(allocs) != 2 {
-			t.Fatalf("bad: %#v", allocs)
-		}
+      // Check the output
+      allocs := obj.([]*structs.AllocListStub)
+      if len(allocs) != 2 {
+        t.Fatalf("bad: %#v", allocs)
+      }
+    }
 	})
 }
 
@@ -171,26 +177,28 @@ func TestHTTP_EvalQuery(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.EvalSpecificRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.EvalSpecificRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
-		if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
-			t.Fatalf("missing known leader")
-		}
-		if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
-			t.Fatalf("missing last contact")
-		}
+      // Check for the index
+      if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+        t.Fatalf("missing index")
+      }
+      if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
+        t.Fatalf("missing known leader")
+      }
+      if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
+        t.Fatalf("missing last contact")
+      }
 
-		// Check the job
-		e := obj.(*structs.Evaluation)
-		if e.ID != eval.ID {
-			t.Fatalf("bad: %#v", e)
-		}
+      // Check the job
+      e := obj.(*structs.Evaluation)
+      if e.ID != eval.ID {
+        t.Fatalf("bad: %#v", e)
+      }
+    }
 	})
 }

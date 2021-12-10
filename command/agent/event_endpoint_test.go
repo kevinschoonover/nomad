@@ -33,7 +33,7 @@ func TestEventStream(t *testing.T) {
 
 		respErrCh := make(chan error)
 		go func() {
-			_, err = s.Server.EventStream(resp, req)
+			_, err = s.Servers[0].EventStream(resp, req)
 			respErrCh <- err
 			assert.NoError(t, err)
 		}()
@@ -80,7 +80,7 @@ func TestEventStream_NamespaceQuery(t *testing.T) {
 
 		respErrCh := make(chan error)
 		go func() {
-			_, err = s.Server.EventStream(resp, req)
+			_, err = s.Servers[0].EventStream(resp, req)
 			respErrCh <- err
 			assert.NoError(t, err)
 		}()

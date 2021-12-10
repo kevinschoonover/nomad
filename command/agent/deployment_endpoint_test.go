@@ -27,17 +27,19 @@ func TestHTTP_DeploymentList(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.DeploymentsRequest(respW, req)
-		assert.Nil(err, "Deployment Request")
+    for _, srv := range s.Servers {
+      obj, err := srv.DeploymentsRequest(respW, req)
+      assert.Nil(err, "Deployment Request")
 
-		// Check for the index
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
-		assert.Equal("true", respW.HeaderMap.Get("X-Nomad-KnownLeader"), "missing known leader")
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-LastContact"), "missing last contact")
+      // Check for the index
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+      assert.Equal("true", respW.HeaderMap.Get("X-Nomad-KnownLeader"), "missing known leader")
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-LastContact"), "missing last contact")
 
-		// Check the deployments
-		deploys := obj.([]*structs.Deployment)
-		assert.Len(deploys, 2, "Deployments")
+      // Check the deployments
+      deploys := obj.([]*structs.Deployment)
+      assert.Len(deploys, 2, "Deployments")
+    }
 	})
 }
 
@@ -60,18 +62,20 @@ func TestHTTP_DeploymentPrefixList(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.DeploymentsRequest(respW, req)
-		assert.Nil(err, "Deployment Request")
+    for _, srv := range s.Servers {
+      obj, err := srv.DeploymentsRequest(respW, req)
+      assert.Nil(err, "Deployment Request")
 
-		// Check for the index
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
-		assert.Equal("true", respW.HeaderMap.Get("X-Nomad-KnownLeader"), "missing known leader")
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-LastContact"), "missing last contact")
+      // Check for the index
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+      assert.Equal("true", respW.HeaderMap.Get("X-Nomad-KnownLeader"), "missing known leader")
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-LastContact"), "missing last contact")
 
-		// Check the deployments
-		deploys := obj.([]*structs.Deployment)
-		assert.Len(deploys, 1, "Deployments")
-		assert.Equal(d1.ID, deploys[0].ID, "Wrong Deployment")
+      // Check the deployments
+      deploys := obj.([]*structs.Deployment)
+      assert.Len(deploys, 1, "Deployments")
+      assert.Equal(d1.ID, deploys[0].ID, "Wrong Deployment")
+    }
 	})
 }
 
@@ -117,22 +121,24 @@ func TestHTTP_DeploymentAllocations(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.DeploymentSpecificRequest(respW, req)
-		assert.Nil(err, "DeploymentSpecificRequest")
+    for _, srv := range s.Servers {
+      obj, err := srv.DeploymentSpecificRequest(respW, req)
+      assert.Nil(err, "DeploymentSpecificRequest")
 
-		// Check for the index
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
-		assert.Equal("true", respW.HeaderMap.Get("X-Nomad-KnownLeader"), "missing known leader")
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-LastContact"), "missing last contact")
+      // Check for the index
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+      assert.Equal("true", respW.HeaderMap.Get("X-Nomad-KnownLeader"), "missing known leader")
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-LastContact"), "missing last contact")
 
-		// Check the output
-		allocs := obj.([]*structs.AllocListStub)
-		assert.Len(allocs, 2, "Deployment Allocs")
-		expectedMsg := "Task's sibling failed"
-		displayMsg1 := allocs[0].TaskStates["test"].Events[0].DisplayMessage
-		assert.Equal(expectedMsg, displayMsg1, "DisplayMessage should be set")
-		displayMsg2 := allocs[0].TaskStates["test"].Events[0].DisplayMessage
-		assert.Equal(expectedMsg, displayMsg2, "DisplayMessage should be set")
+      // Check the output
+      allocs := obj.([]*structs.AllocListStub)
+      assert.Len(allocs, 2, "Deployment Allocs")
+      expectedMsg := "Task's sibling failed"
+      displayMsg1 := allocs[0].TaskStates["test"].Events[0].DisplayMessage
+      assert.Equal(expectedMsg, displayMsg1, "DisplayMessage should be set")
+      displayMsg2 := allocs[0].TaskStates["test"].Events[0].DisplayMessage
+      assert.Equal(expectedMsg, displayMsg2, "DisplayMessage should be set")
+    }
 	})
 }
 
@@ -151,17 +157,19 @@ func TestHTTP_DeploymentQuery(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.DeploymentSpecificRequest(respW, req)
-		assert.Nil(err, "Deployment Request")
+    for _, srv := range s.Servers {
+      obj, err := srv.DeploymentSpecificRequest(respW, req)
+      assert.Nil(err, "Deployment Request")
 
-		// Check for the index
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
-		assert.Equal("true", respW.HeaderMap.Get("X-Nomad-KnownLeader"), "missing known leader")
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-LastContact"), "missing last contact")
+      // Check for the index
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+      assert.Equal("true", respW.HeaderMap.Get("X-Nomad-KnownLeader"), "missing known leader")
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-LastContact"), "missing last contact")
 
-		// Check the job
-		out := obj.(*structs.Deployment)
-		assert.Equal(d.ID, out.ID, "ID mismatch")
+      // Check the job
+      out := obj.(*structs.Deployment)
+      assert.Equal(d.ID, out.ID, "ID mismatch")
+    }
 	})
 }
 
@@ -194,15 +202,17 @@ func TestHTTP_DeploymentPause(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.DeploymentSpecificRequest(respW, req)
-		assert.Nil(err, "Deployment Request")
+    for _, srv := range s.Servers {
+      obj, err := srv.DeploymentSpecificRequest(respW, req)
+      assert.Nil(err, "Deployment Request")
 
-		// Check the response
-		resp := obj.(structs.DeploymentUpdateResponse)
-		assert.NotZero(resp.EvalID, "Expect Eval")
-		assert.NotZero(resp.EvalCreateIndex, "Expect Eval")
-		assert.NotZero(resp.DeploymentModifyIndex, "Expect Deployment to be Modified")
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+      // Check the response
+      resp := obj.(structs.DeploymentUpdateResponse)
+      assert.NotZero(resp.EvalID, "Expect Eval")
+      assert.NotZero(resp.EvalCreateIndex, "Expect Eval")
+      assert.NotZero(resp.DeploymentModifyIndex, "Expect Deployment to be Modified")
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+    }
 	})
 }
 
@@ -235,15 +245,17 @@ func TestHTTP_DeploymentPromote(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.DeploymentSpecificRequest(respW, req)
-		assert.Nil(err, "Deployment Request")
+    for _, srv := range s.Servers {
+      obj, err := srv.DeploymentSpecificRequest(respW, req)
+      assert.Nil(err, "Deployment Request")
 
-		// Check the response
-		resp := obj.(structs.DeploymentUpdateResponse)
-		assert.NotZero(resp.EvalID, "Expect Eval")
-		assert.NotZero(resp.EvalCreateIndex, "Expect Eval")
-		assert.NotZero(resp.DeploymentModifyIndex, "Expect Deployment to be Modified")
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+      // Check the response
+      resp := obj.(structs.DeploymentUpdateResponse)
+      assert.NotZero(resp.EvalID, "Expect Eval")
+      assert.NotZero(resp.EvalCreateIndex, "Expect Eval")
+      assert.NotZero(resp.DeploymentModifyIndex, "Expect Deployment to be Modified")
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+    }
 	})
 }
 
@@ -280,15 +292,17 @@ func TestHTTP_DeploymentAllocHealth(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.DeploymentSpecificRequest(respW, req)
-		assert.Nil(err, "Deployment Request")
+    for _, srv := range s.Servers {
+      obj, err := srv.DeploymentSpecificRequest(respW, req)
+      assert.Nil(err, "Deployment Request")
 
-		// Check the response
-		resp := obj.(structs.DeploymentUpdateResponse)
-		assert.NotZero(resp.EvalID, "Expect Eval")
-		assert.NotZero(resp.EvalCreateIndex, "Expect Eval")
-		assert.NotZero(resp.DeploymentModifyIndex, "Expect Deployment to be Modified")
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+      // Check the response
+      resp := obj.(structs.DeploymentUpdateResponse)
+      assert.NotZero(resp.EvalID, "Expect Eval")
+      assert.NotZero(resp.EvalCreateIndex, "Expect Eval")
+      assert.NotZero(resp.DeploymentModifyIndex, "Expect Deployment to be Modified")
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+    }
 	})
 }
 
@@ -310,14 +324,16 @@ func TestHTTP_DeploymentFail(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.DeploymentSpecificRequest(respW, req)
-		assert.Nil(err, "Deployment Request")
+    for _, srv := range s.Servers {
+      obj, err := srv.DeploymentSpecificRequest(respW, req)
+      assert.Nil(err, "Deployment Request")
 
-		// Check the response
-		resp := obj.(structs.DeploymentUpdateResponse)
-		assert.NotZero(resp.EvalID, "Expect Eval")
-		assert.NotZero(resp.EvalCreateIndex, "Expect Eval")
-		assert.NotZero(resp.DeploymentModifyIndex, "Expect Deployment to be Modified")
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+      // Check the response
+      resp := obj.(structs.DeploymentUpdateResponse)
+      assert.NotZero(resp.EvalID, "Expect Eval")
+      assert.NotZero(resp.EvalCreateIndex, "Expect Eval")
+      assert.NotZero(resp.DeploymentModifyIndex, "Expect Deployment to be Modified")
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+    }
 	})
 }

@@ -24,6 +24,8 @@ import (
 	"github.com/hashicorp/nomad/nomad/structs"
 	sconfig "github.com/hashicorp/nomad/nomad/structs/config"
 	"github.com/hashicorp/nomad/testutil"
+
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 func init() {
@@ -69,10 +71,6 @@ type TestAgent struct {
 	// All HTTP servers started. Used to prevent server leaks and preserve
 	// backwards compability.
 	Servers []HTTPServer
-
-	// Server is a reference to the primary, started HTTP endpoint.
-	// It is valid after Start().
-	Server *HTTPServer
 
 	// Agent is the embedded Nomad agent.
 	// It is valid after Start().
@@ -205,8 +203,15 @@ RETRY:
 		testutil.WaitForResult(func() (bool, error) {
 			req, _ := http.NewRequest("GET", "/v1/agent/self", nil)
 			resp := httptest.NewRecorder()
-			_, err := a.Server.AgentSelfRequest(resp, req)
-			return err == nil && resp.Code == 200, err
+			var srvErrs error
+
+			for _, srv := range a.Servers {
+				_, err := srv.AgentSelfRequest(resp, req)
+				if err != nil {
+					srvErrs = multierror.Append(srvErrs, err)
+				}
+			}
+			return srvErrs == nil && resp.Code == 200, srvErrs
 		}, func(err error) {
 			a.T.Logf("failed to find leader: %v", err)
 			failed = true
@@ -265,7 +270,6 @@ func (a *TestAgent) start() (*Agent, error) {
 	}
 	// TODO: change type or handle better
 	a.Servers = httpServers
-	a.Server = &httpServers[0]
 	return agent, nil
 }
 
@@ -304,20 +308,27 @@ func (a *TestAgent) Shutdown() error {
 	}
 }
 
-func (a *TestAgent) HTTPAddr() string {
-	if a.Server == nil {
-		return ""
+func (a *TestAgent) HTTPAddrs() []string {
+	addrs := make([]string, len(a.Servers))
+	if a.Servers == nil {
+		return addrs
 	}
 	proto := "http://"
 	if a.Config.TLSConfig != nil && a.Config.TLSConfig.EnableHTTP {
 		proto = "https://"
 	}
-	return proto + a.Server.Addr
+
+	for i, srv := range a.Servers {
+		addrs[i] = proto + srv.Addr
+	}
+
+	return addrs
 }
 
 func (a *TestAgent) Client() *api.Client {
 	conf := api.DefaultConfig()
-	conf.Address = a.HTTPAddr()
+	// any server should give an equivalent answer so this should be safe
+	conf.Address = a.HTTPAddrs()[0]
 	c, err := api.NewClient(conf)
 	if err != nil {
 		a.T.Fatalf("Error creating Nomad API client: %s", err)

@@ -56,32 +56,34 @@ func TestHTTP_AllocsList(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.AllocsRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+		for _, srv := range s.Servers {
+			obj, err := srv.AllocsRequest(respW, req)
+			if err != nil {
+				t.Fatalf("err: %v", err)
+			}
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
-		if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
-			t.Fatalf("missing known leader")
-		}
-		if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
-			t.Fatalf("missing last contact")
-		}
+			// Check for the index
+			if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+				t.Fatalf("missing index")
+			}
+			if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
+				t.Fatalf("missing known leader")
+			}
+			if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
+				t.Fatalf("missing last contact")
+			}
 
-		// Check the alloc
-		allocs := obj.([]*structs.AllocListStub)
-		if len(allocs) != 2 {
-			t.Fatalf("bad: %#v", allocs)
+			// Check the alloc
+			allocs := obj.([]*structs.AllocListStub)
+			if len(allocs) != 2 {
+				t.Fatalf("bad: %#v", allocs)
+			}
+			expectedMsg := "Task's sibling failed"
+			displayMsg1 := allocs[0].TaskStates["test"].Events[0].DisplayMessage
+			require.Equal(t, expectedMsg, displayMsg1, "DisplayMessage should be set")
+			displayMsg2 := allocs[0].TaskStates["test"].Events[0].DisplayMessage
+			require.Equal(t, expectedMsg, displayMsg2, "DisplayMessage should be set")
 		}
-		expectedMsg := "Task's sibling failed"
-		displayMsg1 := allocs[0].TaskStates["test"].Events[0].DisplayMessage
-		require.Equal(t, expectedMsg, displayMsg1, "DisplayMessage should be set")
-		displayMsg2 := allocs[0].TaskStates["test"].Events[0].DisplayMessage
-		require.Equal(t, expectedMsg, displayMsg2, "DisplayMessage should be set")
 	})
 }
 
@@ -123,36 +125,37 @@ func TestHTTP_AllocsPrefixList(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.AllocsRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+		for _, srv := range s.Servers {
+			obj, err := srv.AllocsRequest(respW, req)
+			if err != nil {
+				t.Fatalf("err: %v", err)
+			}
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
-		if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
-			t.Fatalf("missing known leader")
-		}
-		if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
-			t.Fatalf("missing last contact")
-		}
+			// Check for the index
+			if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+				t.Fatalf("missing index")
+			}
+			if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
+				t.Fatalf("missing known leader")
+			}
+			if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
+				t.Fatalf("missing last contact")
+			}
 
-		// Check the alloc
-		n := obj.([]*structs.AllocListStub)
-		if len(n) != 1 {
-			t.Fatalf("bad: %#v", n)
-		}
+			// Check the alloc
+			n := obj.([]*structs.AllocListStub)
+			if len(n) != 1 {
+				t.Fatalf("bad: %#v", n)
+			}
 
-		// Check the identifier
-		if n[0].ID != alloc2.ID {
-			t.Fatalf("expected alloc ID: %v, Actual: %v", alloc2.ID, n[0].ID)
+			// Check the identifier
+			if n[0].ID != alloc2.ID {
+				t.Fatalf("expected alloc ID: %v, Actual: %v", alloc2.ID, n[0].ID)
+			}
+			expectedMsg := "Task's sibling failed"
+			displayMsg1 := n[0].TaskStates["test"].Events[0].DisplayMessage
+			require.Equal(t, expectedMsg, displayMsg1, "DisplayMessage should be set")
 		}
-		expectedMsg := "Task's sibling failed"
-		displayMsg1 := n[0].TaskStates["test"].Events[0].DisplayMessage
-		require.Equal(t, expectedMsg, displayMsg1, "DisplayMessage should be set")
-
 	})
 }
 
@@ -172,28 +175,30 @@ func TestHTTP_AllocQuery(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.AllocSpecificRequest(respW, req)
-		require.NoError(err)
+		for i, srv := range s.Servers {
+			obj, err := srv.AllocSpecificRequest(respW, req)
+			require.NoError(err)
 
-		// Check for the index
-		require.NotEmpty(respW.Header().Get("X-Nomad-Index"), "missing index")
-		require.Equal("true", respW.Header().Get("X-Nomad-KnownLeader"), "missing known leader")
-		require.NotEmpty(respW.Header().Get("X-Nomad-LastContact"), "missing last contact")
+			// Check for the index
+			require.NotEmpty(respW.Header().Get("X-Nomad-Index"), "missing index")
+			require.Equal("true", respW.Header().Get("X-Nomad-KnownLeader"), "missing known leader")
+			require.NotEmpty(respW.Header().Get("X-Nomad-LastContact"), "missing last contact")
 
-		// Check the job
-		a := obj.(*structs.Allocation)
-		require.Equal(a.ID, alloc.ID)
+			// Check the job
+			a := obj.(*structs.Allocation)
+			require.Equal(a.ID, alloc.ID)
 
-		// Check the number of ports
-		require.Len(a.AllocatedResources.Shared.Ports, 2)
+			// Check the number of ports
+			require.Len(a.AllocatedResources.Shared.Ports, 2)
 
-		// Make the request again
-		respW = httptest.NewRecorder()
-		obj, err = s.Server.AllocSpecificRequest(respW, req)
-		require.NoError(err)
-		a = obj.(*structs.Allocation)
-		// Check the number of ports again
-		require.Len(a.AllocatedResources.Shared.Ports, 2)
+			// Make the request again
+			respW = httptest.NewRecorder()
+			obj, err = s.Servers[i].AllocSpecificRequest(respW, req)
+			require.NoError(err)
+			a = obj.(*structs.Allocation)
+			// Check the number of ports again
+			require.Len(a.AllocatedResources.Shared.Ports, 2)
+		}
 	})
 }
 
@@ -224,32 +229,34 @@ func TestHTTP_AllocQuery_Payload(t *testing.T) {
 		}
 		respW := httptest.NewRecorder()
 
-		// Make the request
-		obj, err := s.Server.AllocSpecificRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+		for _, srv := range s.Servers {
+			// Make the request
+			obj, err := srv.AllocSpecificRequest(respW, req)
+			if err != nil {
+				t.Fatalf("err: %v", err)
+			}
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
-		if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
-			t.Fatalf("missing known leader")
-		}
-		if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
-			t.Fatalf("missing last contact")
-		}
+			// Check for the index
+			if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+				t.Fatalf("missing index")
+			}
+			if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
+				t.Fatalf("missing known leader")
+			}
+			if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
+				t.Fatalf("missing last contact")
+			}
 
-		// Check the job
-		a := obj.(*structs.Allocation)
-		if a.ID != alloc.ID {
-			t.Fatalf("bad: %#v", a)
-		}
+			// Check the job
+			a := obj.(*structs.Allocation)
+			if a.ID != alloc.ID {
+				t.Fatalf("bad: %#v", a)
+			}
 
-		// Check the payload is decompressed
-		if !reflect.DeepEqual(a.Job.Payload, expected) {
-			t.Fatalf("Payload not decompressed properly; got %#v; want %#v", a.Job.Payload, expected)
+			// Check the payload is decompressed
+			if !reflect.DeepEqual(a.Job.Payload, expected) {
+				t.Fatalf("Payload not decompressed properly; got %#v; want %#v", a.Job.Payload, expected)
+			}
 		}
 	})
 }
@@ -271,9 +278,11 @@ func TestHTTP_AllocRestart(t *testing.T) {
 			respW := httptest.NewRecorder()
 
 			// Make the request
-			_, err = s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err))
+			for _, srv := range s.Servers {
+				_, err = srv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err))
+			}
 		}
 
 		// Local node, server resp
@@ -286,9 +295,11 @@ func TestHTTP_AllocRestart(t *testing.T) {
 			require.Nil(err)
 
 			respW := httptest.NewRecorder()
-			_, err = s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err))
+			for _, localSrv := range s.Servers {
+				_, err = localSrv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err))
+			}
 
 			s.server = srv
 		}
@@ -313,9 +324,11 @@ func TestHTTP_AllocRestart(t *testing.T) {
 			require.Nil(err)
 
 			respW := httptest.NewRecorder()
-			_, err = s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err))
+			for _, localSrv := range s.Servers {
+				_, err = localSrv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err))
+			}
 
 			s.client = c
 		}
@@ -336,9 +349,11 @@ func TestHTTP_AllocRestart_ACL(t *testing.T) {
 			require.NoError(err)
 
 			respW := httptest.NewRecorder()
-			_, err = s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			for _, srv := range s.Servers {
+				_, err = srv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			}
 		}
 
 		// Try request with an invalid token and expect it to fail
@@ -350,9 +365,11 @@ func TestHTTP_AllocRestart_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1005, "invalid", mock.NodePolicy(acl.PolicyWrite))
 			setToken(req, token)
-			_, err = s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			for _, srv := range s.Servers {
+				_, err = srv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			}
 		}
 
 		// Try request with a valid token
@@ -366,9 +383,11 @@ func TestHTTP_AllocRestart_ACL(t *testing.T) {
 			policy := mock.NamespacePolicy(structs.DefaultNamespace, "", []string{acl.NamespaceCapabilityAllocLifecycle})
 			token := mock.CreatePolicyAndToken(t, state, 1007, "valid", policy)
 			setToken(req, token)
-			_, err = s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			for _, srv := range s.Servers {
+				_, err = srv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			}
 		}
 
 		// Try request with a management token
@@ -380,9 +399,11 @@ func TestHTTP_AllocRestart_ACL(t *testing.T) {
 
 			respW := httptest.NewRecorder()
 			setToken(req, s.RootToken)
-			_, err = s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err))
+			for _, srv := range s.Servers {
+				_, err = srv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err))
+			}
 		}
 	})
 }
@@ -406,14 +427,16 @@ func TestHTTP_AllocStop(t *testing.T) {
 			respW := httptest.NewRecorder()
 
 			// Make the request
-			obj, err := s.Server.AllocSpecificRequest(respW, req)
-			require.NoError(err)
+			for _, srv := range s.Servers {
+				obj, err := srv.AllocSpecificRequest(respW, req)
+				require.NoError(err)
 
-			a := obj.(*structs.AllocStopResponse)
-			require.NotEmpty(a.EvalID, "missing eval")
-			require.NotEmpty(a.Index, "missing index")
-			headerIndex, _ := strconv.ParseUint(respW.Header().Get("X-Nomad-Index"), 10, 64)
-			require.Equal(a.Index, headerIndex)
+				a := obj.(*structs.AllocStopResponse)
+				require.NotEmpty(a.EvalID, "missing eval")
+				require.NotEmpty(a.Index, "missing index")
+				headerIndex, _ := strconv.ParseUint(respW.Header().Get("X-Nomad-Index"), 10, 64)
+				require.Equal(a.Index, headerIndex)
+			}
 		}
 
 		// Test that we 404 when the allocid is invalid
@@ -424,10 +447,12 @@ func TestHTTP_AllocStop(t *testing.T) {
 			respW := httptest.NewRecorder()
 
 			// Make the request
-			_, err = s.Server.AllocSpecificRequest(respW, req)
-			require.NotNil(err)
-			if !strings.Contains(err.Error(), allocNotFoundErr) {
-				t.Fatalf("err: %v", err)
+			for _, srv := range s.Servers {
+				_, err = srv.AllocSpecificRequest(respW, req)
+				require.NotNil(err)
+				if !strings.Contains(err.Error(), allocNotFoundErr) {
+					t.Fatalf("err: %v", err)
+				}
 			}
 		}
 	})
@@ -448,9 +473,11 @@ func TestHTTP_AllocStats(t *testing.T) {
 			respW := httptest.NewRecorder()
 
 			// Make the request
-			_, err = s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err))
+			for _, srv := range s.Servers {
+				_, err = srv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err))
+			}
 		}
 
 		// Local node, server resp
@@ -462,9 +489,11 @@ func TestHTTP_AllocStats(t *testing.T) {
 			require.Nil(err)
 
 			respW := httptest.NewRecorder()
-			_, err = s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err))
+			for _, localSrv := range s.Servers {
+				_, err = localSrv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err))
+			}
 
 			s.server = srv
 		}
@@ -488,9 +517,11 @@ func TestHTTP_AllocStats(t *testing.T) {
 			require.Nil(err)
 
 			respW := httptest.NewRecorder()
-			_, err = s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err))
+			for _, localSrv := range s.Servers {
+				_, err = localSrv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err))
+			}
 
 			s.client = c
 		}
@@ -513,9 +544,11 @@ func TestHTTP_AllocStats_ACL(t *testing.T) {
 		// Try request without a token and expect failure
 		{
 			respW := httptest.NewRecorder()
-			_, err := s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			for _, srv := range s.Servers {
+				_, err := srv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			}
 		}
 
 		// Try request with an invalid token and expect failure
@@ -523,9 +556,11 @@ func TestHTTP_AllocStats_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1005, "invalid", mock.NodePolicy(acl.PolicyWrite))
 			setToken(req, token)
-			_, err := s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			for _, srv := range s.Servers {
+				_, err := srv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			}
 		}
 
 		// Try request with a valid token
@@ -535,9 +570,11 @@ func TestHTTP_AllocStats_ACL(t *testing.T) {
 			policy := mock.NamespacePolicy(structs.DefaultNamespace, "", []string{acl.NamespaceCapabilityReadJob})
 			token := mock.CreatePolicyAndToken(t, state, 1007, "valid", policy)
 			setToken(req, token)
-			_, err := s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			for _, srv := range s.Servers {
+				_, err := srv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			}
 		}
 
 		// Try request with a management token
@@ -545,9 +582,11 @@ func TestHTTP_AllocStats_ACL(t *testing.T) {
 		{
 			respW := httptest.NewRecorder()
 			setToken(req, s.RootToken)
-			_, err := s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err))
+			for _, srv := range s.Servers {
+				_, err := srv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err))
+			}
 		}
 	})
 }
@@ -563,9 +602,11 @@ func TestHTTP_AllocSnapshot(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		_, err = s.Server.ClientAllocRequest(respW, req)
-		if !strings.Contains(err.Error(), allocNotFoundErr) {
-			t.Fatalf("err: %v", err)
+		for _, srv := range s.Servers {
+			_, err = srv.ClientAllocRequest(respW, req)
+			if !strings.Contains(err.Error(), allocNotFoundErr) {
+				t.Fatalf("err: %v", err)
+			}
 		}
 	})
 }
@@ -580,9 +621,11 @@ func TestHTTP_AllocSnapshot_WithMigrateToken(t *testing.T) {
 
 		// Make the unauthorized request
 		respW := httptest.NewRecorder()
-		_, err = s.Server.ClientAllocRequest(respW, req)
-		require.NotNil(err)
-		require.EqualError(err, structs.ErrPermissionDenied.Error())
+		for _, srv := range s.Servers {
+			_, err = srv.ClientAllocRequest(respW, req)
+			require.NotNil(err)
+			require.EqualError(err, structs.ErrPermissionDenied.Error())
+		}
 
 		// Create an allocation
 		alloc := mock.Alloc()
@@ -599,8 +642,10 @@ func TestHTTP_AllocSnapshot_WithMigrateToken(t *testing.T) {
 
 		// Make the unauthorized request
 		respW = httptest.NewRecorder()
-		_, err = s.Server.ClientAllocRequest(respW, req)
-		require.NotContains(err.Error(), structs.ErrPermissionDenied.Error())
+		for _, srv := range s.Servers {
+			_, err = srv.ClientAllocRequest(respW, req)
+			require.NotContains(err.Error(), structs.ErrPermissionDenied.Error())
+		}
 	})
 }
 
@@ -670,47 +715,49 @@ func TestHTTP_AllocSnapshot_Atomic(t *testing.T) {
 
 		// Make the request via the mux to make sure the error returned
 		// by Snapshot is properly propagated via HTTP
-		s.Server.mux.ServeHTTP(respW, req)
-		resp := respW.Result()
-		r := tar.NewReader(resp.Body)
-		errorFilename := allocdir.SnapshotErrorFilename(alloc.ID)
-		markerFound := false
-		markerContents := ""
-		for {
-			header, err := r.Next()
-			if err != nil {
-				if err != io.EOF {
-					// Huh, I wonder how a non-EOF error can happen?
-					t.Errorf("Unexpected error while streaming: %v", err)
+		for _, srv := range s.Servers {
+			srv.mux.ServeHTTP(respW, req)
+			resp := respW.Result()
+			r := tar.NewReader(resp.Body)
+			errorFilename := allocdir.SnapshotErrorFilename(alloc.ID)
+			markerFound := false
+			markerContents := ""
+			for {
+				header, err := r.Next()
+				if err != nil {
+					if err != io.EOF {
+						// Huh, I wonder how a non-EOF error can happen?
+						t.Errorf("Unexpected error while streaming: %v", err)
+					}
+					break
 				}
-				break
-			}
 
-			if markerFound {
-				// No more files should be found after the failure marker
-				t.Errorf("Next file found after error marker: %s", header.Name)
-				break
-			}
+				if markerFound {
+					// No more files should be found after the failure marker
+					t.Errorf("Next file found after error marker: %s", header.Name)
+					break
+				}
 
-			if header.Name == errorFilename {
-				// Found it!
-				markerFound = true
-				buf := make([]byte, int(header.Size))
-				if _, err := r.Read(buf); err != nil && err != io.EOF {
-					t.Errorf("Unexpected error reading error marker %s: %v", errorFilename, err)
-				} else {
-					markerContents = string(buf)
+				if header.Name == errorFilename {
+					// Found it!
+					markerFound = true
+					buf := make([]byte, int(header.Size))
+					if _, err := r.Read(buf); err != nil && err != io.EOF {
+						t.Errorf("Unexpected error reading error marker %s: %v", errorFilename, err)
+					} else {
+						markerContents = string(buf)
+					}
 				}
 			}
-		}
 
-		if !markerFound {
-			t.Fatalf("marker file %s not written; bad tar will be treated as good!", errorFilename)
-		}
-		if markerContents == "" {
-			t.Fatalf("marker file %s empty", markerContents)
-		} else {
-			t.Logf("EXPECTED snapshot error: %s", markerContents)
+			if !markerFound {
+				t.Fatalf("marker file %s not written; bad tar will be treated as good!", errorFilename)
+			}
+			if markerContents == "" {
+				t.Fatalf("marker file %s empty", markerContents)
+			} else {
+				t.Logf("EXPECTED snapshot error: %s", markerContents)
+			}
 		}
 	})
 }
@@ -728,9 +775,11 @@ func TestHTTP_AllocGC(t *testing.T) {
 			}
 
 			respW := httptest.NewRecorder()
-			_, err = s.Server.ClientAllocRequest(respW, req)
-			if !structs.IsErrUnknownAllocation(err) {
-				t.Fatalf("unexpected err: %v", err)
+			for _, srv := range s.Servers {
+				_, err = srv.ClientAllocRequest(respW, req)
+				if !structs.IsErrUnknownAllocation(err) {
+					t.Fatalf("unexpected err: %v", err)
+				}
 			}
 		}
 
@@ -745,9 +794,11 @@ func TestHTTP_AllocGC(t *testing.T) {
 			}
 
 			respW := httptest.NewRecorder()
-			_, err = s.Server.ClientAllocRequest(respW, req)
-			if !structs.IsErrUnknownAllocation(err) {
-				t.Fatalf("unexpected err: %v", err)
+			for _, localSrv := range s.Servers {
+				_, err = localSrv.ClientAllocRequest(respW, req)
+				if !structs.IsErrUnknownAllocation(err) {
+					t.Fatalf("unexpected err: %v", err)
+				}
 			}
 
 			s.server = srv
@@ -774,10 +825,12 @@ func TestHTTP_AllocGC(t *testing.T) {
 			}
 
 			respW := httptest.NewRecorder()
-			_, err = s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			if !structs.IsErrUnknownAllocation(err) {
-				t.Fatalf("unexpected err: %v", err)
+			for _, localSrv := range s.Servers {
+				_, err = localSrv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				if !structs.IsErrUnknownAllocation(err) {
+					t.Fatalf("unexpected err: %v", err)
+				}
 			}
 
 			s.client = c
@@ -802,9 +855,11 @@ func TestHTTP_AllocGC_ACL(t *testing.T) {
 		// Try request without a token and expect failure
 		{
 			respW := httptest.NewRecorder()
-			_, err := s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			for _, srv := range s.Servers {
+				_, err := srv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			}
 		}
 
 		// Try request with an invalid token and expect failure
@@ -812,9 +867,11 @@ func TestHTTP_AllocGC_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1005, "invalid", mock.NodePolicy(acl.PolicyWrite))
 			setToken(req, token)
-			_, err := s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			for _, srv := range s.Servers {
+				_, err := srv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			}
 		}
 
 		// Try request with a valid token
@@ -824,9 +881,11 @@ func TestHTTP_AllocGC_ACL(t *testing.T) {
 			policy := mock.NamespacePolicy(structs.DefaultNamespace, "", []string{acl.NamespaceCapabilitySubmitJob})
 			token := mock.CreatePolicyAndToken(t, state, 1007, "valid", policy)
 			setToken(req, token)
-			_, err := s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			for _, srv := range s.Servers {
+				_, err := srv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err), "(%T) %v", err, err)
+			}
 		}
 
 		// Try request with a management token
@@ -834,9 +893,11 @@ func TestHTTP_AllocGC_ACL(t *testing.T) {
 		{
 			respW := httptest.NewRecorder()
 			setToken(req, s.RootToken)
-			_, err := s.Server.ClientAllocRequest(respW, req)
-			require.NotNil(err)
-			require.True(structs.IsErrUnknownAllocation(err))
+			for _, srv := range s.Servers {
+				_, err := srv.ClientAllocRequest(respW, req)
+				require.NotNil(err)
+				require.True(structs.IsErrUnknownAllocation(err))
+			}
 		}
 	})
 }
@@ -853,9 +914,11 @@ func TestHTTP_AllocAllGC(t *testing.T) {
 			}
 
 			respW := httptest.NewRecorder()
-			_, err = s.Server.ClientGCRequest(respW, req)
-			if err != nil {
-				t.Fatalf("unexpected err: %v", err)
+			for _, srv := range s.Servers {
+				_, err = srv.ClientGCRequest(respW, req)
+				if err != nil {
+					t.Fatalf("unexpected err: %v", err)
+				}
 			}
 		}
 
@@ -868,9 +931,11 @@ func TestHTTP_AllocAllGC(t *testing.T) {
 			require.Nil(err)
 
 			respW := httptest.NewRecorder()
-			_, err = s.Server.ClientGCRequest(respW, req)
-			require.NotNil(err)
-			require.Contains(err.Error(), "Unknown node")
+			for _, localSrv := range s.Servers {
+				_, err = localSrv.ClientGCRequest(respW, req)
+				require.NotNil(err)
+				require.Contains(err.Error(), "Unknown node")
+			}
 
 			s.server = srv
 		}
@@ -894,8 +959,10 @@ func TestHTTP_AllocAllGC(t *testing.T) {
 			require.Nil(err)
 
 			respW := httptest.NewRecorder()
-			_, err = s.Server.ClientGCRequest(respW, req)
-			require.Nil(err)
+			for _, srv := range s.Servers {
+				_, err = srv.ClientGCRequest(respW, req)
+				require.Nil(err)
+			}
 
 			s.client = c
 		}
@@ -916,9 +983,11 @@ func TestHTTP_AllocAllGC_ACL(t *testing.T) {
 		// Try request without a token and expect failure
 		{
 			respW := httptest.NewRecorder()
-			_, err := s.Server.ClientGCRequest(respW, req)
-			require.NotNil(err)
-			require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			for _, srv := range s.Servers {
+				_, err := srv.ClientGCRequest(respW, req)
+				require.NotNil(err)
+				require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			}
 		}
 
 		// Try request with an invalid token and expect failure
@@ -926,9 +995,11 @@ func TestHTTP_AllocAllGC_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1005, "invalid", mock.NodePolicy(acl.PolicyRead))
 			setToken(req, token)
-			_, err := s.Server.ClientGCRequest(respW, req)
-			require.NotNil(err)
-			require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			for _, srv := range s.Servers {
+				_, err := srv.ClientGCRequest(respW, req)
+				require.NotNil(err)
+				require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			}
 		}
 
 		// Try request with a valid token
@@ -936,18 +1007,22 @@ func TestHTTP_AllocAllGC_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1007, "valid", mock.NodePolicy(acl.PolicyWrite))
 			setToken(req, token)
-			_, err := s.Server.ClientGCRequest(respW, req)
-			require.Nil(err)
-			require.Equal(http.StatusOK, respW.Code)
+			for _, srv := range s.Servers {
+				_, err := srv.ClientGCRequest(respW, req)
+				require.Nil(err)
+				require.Equal(http.StatusOK, respW.Code)
+			}
 		}
 
 		// Try request with a management token
 		{
 			respW := httptest.NewRecorder()
 			setToken(req, s.RootToken)
-			_, err := s.Server.ClientGCRequest(respW, req)
-			require.Nil(err)
-			require.Equal(http.StatusOK, respW.Code)
+			for _, srv := range s.Servers {
+				_, err := srv.ClientGCRequest(respW, req)
+				require.Nil(err)
+				require.Equal(http.StatusOK, respW.Code)
+			}
 		}
 	})
 }

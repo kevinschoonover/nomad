@@ -45,27 +45,29 @@ func TestHTTP_JobsList(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobsRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.JobsRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
-		if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
-			t.Fatalf("missing known leader")
-		}
-		if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
-			t.Fatalf("missing last contact")
-		}
+      // Check for the index
+      if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+        t.Fatalf("missing index")
+      }
+      if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
+        t.Fatalf("missing known leader")
+      }
+      if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
+        t.Fatalf("missing last contact")
+      }
 
-		// Check the job
-		j := obj.([]*structs.JobListStub)
-		if len(j) != 3 {
-			t.Fatalf("bad: %#v", j)
-		}
+      // Check the job
+      j := obj.([]*structs.JobListStub)
+      if len(j) != 3 {
+        t.Fatalf("bad: %#v", j)
+      }
+    }
 	})
 }
 
@@ -103,27 +105,29 @@ func TestHTTP_PrefixJobsList(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobsRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.JobsRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
-		if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
-			t.Fatalf("missing known leader")
-		}
-		if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
-			t.Fatalf("missing last contact")
-		}
+      // Check for the index
+      if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+        t.Fatalf("missing index")
+      }
+      if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
+        t.Fatalf("missing known leader")
+      }
+      if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
+        t.Fatalf("missing last contact")
+      }
 
-		// Check the job
-		j := obj.([]*structs.JobListStub)
-		if len(j) != 2 {
-			t.Fatalf("bad: %#v", j)
-		}
+      // Check the job
+      j := obj.([]*structs.JobListStub)
+      if len(j) != 2 {
+        t.Fatalf("bad: %#v", j)
+      }
+    }
 	})
 }
 
@@ -151,19 +155,21 @@ func TestHTTP_JobsList_AllNamespaces_OSS(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobsRequest(respW, req)
-		require.NoError(t, err)
+    for _, srv := range s.Servers {
+      obj, err := srv.JobsRequest(respW, req)
+      require.NoError(t, err)
 
-		// Check for the index
-		require.NotEmpty(t, respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
-		require.Equal(t, "true", respW.HeaderMap.Get("X-Nomad-KnownLeader"), "missing known leader")
-		require.NotEmpty(t, respW.HeaderMap.Get("X-Nomad-LastContact"), "missing last contact")
+      // Check for the index
+      require.NotEmpty(t, respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+      require.Equal(t, "true", respW.HeaderMap.Get("X-Nomad-KnownLeader"), "missing known leader")
+      require.NotEmpty(t, respW.HeaderMap.Get("X-Nomad-LastContact"), "missing last contact")
 
-		// Check the job
-		j := obj.([]*structs.JobListStub)
-		require.Len(t, j, 3)
+      // Check the job
+      j := obj.([]*structs.JobListStub)
+      require.Len(t, j, 3)
 
-		require.Equal(t, "default", j[0].Namespace)
+      require.Equal(t, "default", j[0].Namespace)
+    }
 	})
 }
 
@@ -186,7 +192,7 @@ func TestHTTP_JobsRegister(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobsRequest(respW, req)
+		obj, err := s.Servers[0].JobsRequest(respW, req)
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -240,7 +246,7 @@ func TestHTTP_JobsRegister_IgnoresParentID(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobsRequest(respW, req)
+		obj, err := s.Servers[0].JobsRequest(respW, req)
 		require.NoError(t, err)
 
 		// Check the response
@@ -306,7 +312,7 @@ func TestHTTP_JobsRegister_ACL(t *testing.T) {
 		setToken(req, s.RootToken)
 
 		// Make the request
-		obj, err := s.Server.JobsRequest(respW, req)
+		obj, err := s.Servers[0].JobsRequest(respW, req)
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -337,7 +343,7 @@ func TestHTTP_JobsRegister_Defaulting(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobsRequest(respW, req)
+		obj, err := s.Servers[0].JobsRequest(respW, req)
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -386,7 +392,7 @@ func TestHTTP_JobsParse(t *testing.T) {
 
 		respW := httptest.NewRecorder()
 
-		obj, err := s.Server.JobsParseRequest(respW, req)
+		obj, err := s.Servers[0].JobsParseRequest(respW, req)
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -432,27 +438,29 @@ func TestHTTP_JobQuery(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.JobSpecificRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
-		if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
-			t.Fatalf("missing known leader")
-		}
-		if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
-			t.Fatalf("missing last contact")
-		}
+      // Check for the index
+      if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+        t.Fatalf("missing index")
+      }
+      if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
+        t.Fatalf("missing known leader")
+      }
+      if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
+        t.Fatalf("missing last contact")
+      }
 
-		// Check the job
-		j := obj.(*structs.Job)
-		if j.ID != job.ID {
-			t.Fatalf("bad: %#v", j)
-		}
+      // Check the job
+      j := obj.(*structs.Job)
+      if j.ID != job.ID {
+        t.Fatalf("bad: %#v", j)
+      }
+    }
 	})
 }
 
@@ -481,32 +489,34 @@ func TestHTTP_JobQuery_Payload(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.JobSpecificRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
-		if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
-			t.Fatalf("missing known leader")
-		}
-		if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
-			t.Fatalf("missing last contact")
-		}
+      // Check for the index
+      if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+        t.Fatalf("missing index")
+      }
+      if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
+        t.Fatalf("missing known leader")
+      }
+      if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
+        t.Fatalf("missing last contact")
+      }
 
-		// Check the job
-		j := obj.(*structs.Job)
-		if j.ID != job.ID {
-			t.Fatalf("bad: %#v", j)
-		}
+      // Check the job
+      j := obj.(*structs.Job)
+      if j.ID != job.ID {
+        t.Fatalf("bad: %#v", j)
+      }
 
-		// Check the payload is decompressed
-		if !reflect.DeepEqual(j.Payload, expected) {
-			t.Fatalf("Payload not decompressed properly; got %#v; want %#v", j.Payload, expected)
-		}
+      // Check the payload is decompressed
+      if !reflect.DeepEqual(j.Payload, expected) {
+        t.Fatalf("Payload not decompressed properly; got %#v; want %#v", j.Payload, expected)
+      }
+    }
 	})
 }
 
@@ -534,7 +544,7 @@ func TestHTTP_jobUpdate_systemScaling(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
+		obj, err := s.Servers[0].JobSpecificRequest(respW, req)
 		assert.Nil(t, obj)
 		assert.Equal(t, CodedError(400, "Task groups with job type system do not support scaling stanzas"), err)
 	})
@@ -562,7 +572,7 @@ func TestHTTP_JobUpdate(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
+		obj, err := s.Servers[0].JobSpecificRequest(respW, req)
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -648,7 +658,7 @@ func TestHTTP_JobUpdate_EvalPriority(t *testing.T) {
 				respW := httptest.NewRecorder()
 
 				// Make the request
-				obj, err := s.Server.JobSpecificRequest(respW, req)
+				obj, err := s.Servers[0].JobSpecificRequest(respW, req)
 				if tc.expectedError {
 					assert.NotNil(t, err)
 					return
@@ -678,15 +688,17 @@ func TestHTTP_JobUpdate_EvalPriority(t *testing.T) {
 				assert.Nil(t, err)
 				respW.Flush()
 
-				evalRaw, err := s.Server.EvalSpecificRequest(respW, evalInfoReq)
-				assert.Nil(t, err)
-				evalRespObj := evalRaw.(*structs.Evaluation)
+        for _, srv := range s.Servers {
+          evalRaw, err := srv.EvalSpecificRequest(respW, evalInfoReq)
+          assert.Nil(t, err)
+          evalRespObj := evalRaw.(*structs.Evaluation)
 
-				if tc.inputEvalPriority > 0 {
-					assert.Equal(t, tc.inputEvalPriority, evalRespObj.Priority)
-				} else {
-					assert.Equal(t, *job.Priority, evalRespObj.Priority)
-				}
+          if tc.inputEvalPriority > 0 {
+            assert.Equal(t, tc.inputEvalPriority, evalRespObj.Priority)
+          } else {
+            assert.Equal(t, *job.Priority, evalRespObj.Priority)
+          }
+        }
 			})
 		})
 	}
@@ -763,7 +775,7 @@ func TestHTTP_JobUpdateRegion(t *testing.T) {
 				respW := httptest.NewRecorder()
 
 				// Make the request
-				obj, err := s.Server.JobSpecificRequest(respW, req)
+				obj, err := s.Servers[0].JobSpecificRequest(respW, req)
 				require.NoError(t, err)
 
 				// Check the response
@@ -816,7 +828,7 @@ func TestHTTP_JobDelete(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
+		obj, err := s.Servers[0].JobSpecificRequest(respW, req)
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -859,7 +871,7 @@ func TestHTTP_JobDelete(t *testing.T) {
 		respW.Flush()
 
 		// Make the request
-		obj, err = s.Server.JobSpecificRequest(respW, req2)
+		obj, err = s.Servers[0].JobSpecificRequest(respW, req2)
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -939,7 +951,7 @@ func TestHTTP_JobDelete_EvalPriority(t *testing.T) {
 				respW := httptest.NewRecorder()
 
 				// Make the request
-				obj, err := s.Server.JobSpecificRequest(respW, regReq)
+				obj, err := s.Servers[0].JobSpecificRequest(respW, regReq)
 				assert.Nil(t, err)
 
 				// Check the response
@@ -972,7 +984,7 @@ func TestHTTP_JobDelete_EvalPriority(t *testing.T) {
 				}
 
 				// Make the request
-				obj, err = s.Server.JobSpecificRequest(respW, deleteReq)
+				obj, err = s.Servers[0].JobSpecificRequest(respW, deleteReq)
 				if tc.expectedError {
 					assert.NotNil(t, err)
 					return
@@ -990,15 +1002,17 @@ func TestHTTP_JobDelete_EvalPriority(t *testing.T) {
 				assert.Nil(t, err)
 				respW.Flush()
 
-				evalRaw, err := s.Server.EvalSpecificRequest(respW, evalInfoReq)
-				assert.Nil(t, err)
-				evalRespObj := evalRaw.(*structs.Evaluation)
+        for _, srv := range s.Servers {
+          evalRaw, err := srv.EvalSpecificRequest(respW, evalInfoReq)
+          assert.Nil(t, err)
+          evalRespObj := evalRaw.(*structs.Evaluation)
 
-				if tc.inputEvalPriority > 0 {
-					assert.Equal(t, tc.inputEvalPriority, evalRespObj.Priority)
-				} else {
-					assert.Equal(t, *job.Priority, evalRespObj.Priority)
-				}
+          if tc.inputEvalPriority > 0 {
+            assert.Equal(t, tc.inputEvalPriority, evalRespObj.Priority)
+          } else {
+            assert.Equal(t, *job.Priority, evalRespObj.Priority)
+          }
+        }
 			})
 		})
 	}
@@ -1039,7 +1053,7 @@ func TestHTTP_Job_ScaleTaskGroup(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
+		obj, err := s.Servers[0].JobSpecificRequest(respW, req)
 		require.NoError(err)
 
 		// Check the response
@@ -1091,16 +1105,18 @@ func TestHTTP_Job_ScaleStatus(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
-		require.NoError(err)
+    for _, srv := range s.Servers {
+      obj, err := srv.JobSpecificRequest(respW, req)
+      require.NoError(err)
 
-		// Check the response
-		status := obj.(*structs.JobScaleStatus)
-		require.NotEmpty(resp.EvalID)
-		require.Equal(job.TaskGroups[0].Count, status.TaskGroups[job.TaskGroups[0].Name].Desired)
+      // Check the response
+      status := obj.(*structs.JobScaleStatus)
+      require.NotEmpty(resp.EvalID)
+      require.Equal(job.TaskGroups[0].Count, status.TaskGroups[job.TaskGroups[0].Name].Desired)
 
-		// Check for the index
-		require.NotEmpty(respW.Header().Get("X-Nomad-Index"))
+      // Check for the index
+      require.NotEmpty(respW.Header().Get("X-Nomad-Index"))
+    }
 	})
 }
 
@@ -1129,7 +1145,7 @@ func TestHTTP_JobForceEvaluate(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
+		obj, err := s.Servers[0].JobSpecificRequest(respW, req)
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -1180,7 +1196,7 @@ func TestHTTP_JobEvaluate_ForceReschedule(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
+		obj, err := s.Servers[0].JobSpecificRequest(respW, req)
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -1223,29 +1239,31 @@ func TestHTTP_JobEvaluations(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.JobSpecificRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check the response
-		evals := obj.([]*structs.Evaluation)
-		// Can be multiple evals, use the last one, since they are in order
-		idx := len(evals) - 1
-		if len(evals) < 0 || evals[idx].ID != resp.EvalID {
-			t.Fatalf("bad: %v", evals)
-		}
+      // Check the response
+      evals := obj.([]*structs.Evaluation)
+      // Can be multiple evals, use the last one, since they are in order
+      idx := len(evals) - 1
+      if len(evals) < 0 || evals[idx].ID != resp.EvalID {
+        t.Fatalf("bad: %v", evals)
+      }
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
-		if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
-			t.Fatalf("missing known leader")
-		}
-		if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
-			t.Fatalf("missing last contact")
-		}
+      // Check for the index
+      if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+        t.Fatalf("missing index")
+      }
+      if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
+        t.Fatalf("missing known leader")
+      }
+      if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
+        t.Fatalf("missing last contact")
+      }
+    }
 	})
 }
 
@@ -1288,29 +1306,31 @@ func TestHTTP_JobAllocations(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.JobSpecificRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check the response
-		allocs := obj.([]*structs.AllocListStub)
-		if len(allocs) != 1 && allocs[0].ID != alloc1.ID {
-			t.Fatalf("bad: %v", allocs)
-		}
-		displayMsg := allocs[0].TaskStates["test"].Events[0].DisplayMessage
-		assert.Equal(t, expectedDisplayMsg, displayMsg)
+      // Check the response
+      allocs := obj.([]*structs.AllocListStub)
+      if len(allocs) != 1 && allocs[0].ID != alloc1.ID {
+        t.Fatalf("bad: %v", allocs)
+      }
+      displayMsg := allocs[0].TaskStates["test"].Events[0].DisplayMessage
+      assert.Equal(t, expectedDisplayMsg, displayMsg)
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
-		if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
-			t.Fatalf("missing known leader")
-		}
-		if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
-			t.Fatalf("missing last contact")
-		}
+      // Check for the index
+      if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+        t.Fatalf("missing index")
+      }
+      if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
+        t.Fatalf("missing known leader")
+      }
+      if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
+        t.Fatalf("missing last contact")
+      }
+    }
 	})
 }
 
@@ -1344,17 +1364,19 @@ func TestHTTP_JobDeployments(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
-		assert.Nil(err, "JobSpecificRequest")
+    for _, srv := range s.Servers {
+      obj, err := srv.JobSpecificRequest(respW, req)
+      assert.Nil(err, "JobSpecificRequest")
 
-		// Check the response
-		deploys := obj.([]*structs.Deployment)
-		assert.Len(deploys, 1, "deployments")
-		assert.Equal(d.ID, deploys[0].ID, "deployment id")
+      // Check the response
+      deploys := obj.([]*structs.Deployment)
+      assert.Len(deploys, 1, "deployments")
+      assert.Equal(d.ID, deploys[0].ID, "deployment id")
 
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
-		assert.Equal("true", respW.HeaderMap.Get("X-Nomad-KnownLeader"), "missing known leader")
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-LastContact"), "missing last contact")
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+      assert.Equal("true", respW.HeaderMap.Get("X-Nomad-KnownLeader"), "missing known leader")
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-LastContact"), "missing last contact")
+    }
 	})
 }
 
@@ -1387,17 +1409,19 @@ func TestHTTP_JobDeployment(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
-		assert.Nil(err, "JobSpecificRequest")
+    for _, srv := range s.Servers {
+      obj, err := srv.JobSpecificRequest(respW, req)
+      assert.Nil(err, "JobSpecificRequest")
 
-		// Check the response
-		out := obj.(*structs.Deployment)
-		assert.NotNil(out, "deployment")
-		assert.Equal(d.ID, out.ID, "deployment id")
+      // Check the response
+      out := obj.(*structs.Deployment)
+      assert.NotNil(out, "deployment")
+      assert.Equal(d.ID, out.ID, "deployment id")
 
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
-		assert.Equal("true", respW.HeaderMap.Get("X-Nomad-KnownLeader"), "missing known leader")
-		assert.NotZero(respW.HeaderMap.Get("X-Nomad-LastContact"), "missing last contact")
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-Index"), "missing index")
+      assert.Equal("true", respW.HeaderMap.Get("X-Nomad-KnownLeader"), "missing known leader")
+      assert.NotZero(respW.HeaderMap.Get("X-Nomad-LastContact"), "missing last contact")
+    }
 	})
 }
 
@@ -1442,40 +1466,42 @@ func TestHTTP_JobVersions(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.JobSpecificRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check the response
-		vResp := obj.(structs.JobVersionsResponse)
-		versions := vResp.Versions
-		if len(versions) != 2 {
-			t.Fatalf("got %d versions; want 2", len(versions))
-		}
+      // Check the response
+      vResp := obj.(structs.JobVersionsResponse)
+      versions := vResp.Versions
+      if len(versions) != 2 {
+        t.Fatalf("got %d versions; want 2", len(versions))
+      }
 
-		if v := versions[0]; v.Version != 1 || v.Priority != 100 {
-			t.Fatalf("bad %v", v)
-		}
+      if v := versions[0]; v.Version != 1 || v.Priority != 100 {
+        t.Fatalf("bad %v", v)
+      }
 
-		if v := versions[1]; v.Version != 0 {
-			t.Fatalf("bad %v", v)
-		}
+      if v := versions[1]; v.Version != 0 {
+        t.Fatalf("bad %v", v)
+      }
 
-		if len(vResp.Diffs) != 1 {
-			t.Fatalf("bad %v", vResp)
-		}
+      if len(vResp.Diffs) != 1 {
+        t.Fatalf("bad %v", vResp)
+      }
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
-		if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
-			t.Fatalf("missing known leader")
-		}
-		if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
-			t.Fatalf("missing last contact")
-		}
+      // Check for the index
+      if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+        t.Fatalf("missing index")
+      }
+      if respW.HeaderMap.Get("X-Nomad-KnownLeader") != "true" {
+        t.Fatalf("missing known leader")
+      }
+      if respW.HeaderMap.Get("X-Nomad-LastContact") == "" {
+        t.Fatalf("missing last contact")
+      }
+    }
 	})
 }
 
@@ -1504,21 +1530,23 @@ func TestHTTP_PeriodicForce(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.JobSpecificRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
+      // Check for the index
+      if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+        t.Fatalf("missing index")
+      }
 
-		// Check the response
-		r := obj.(structs.PeriodicForceResponse)
-		if r.EvalID == "" {
-			t.Fatalf("bad: %#v", r)
-		}
+      // Check the response
+      r := obj.(structs.PeriodicForceResponse)
+      if r.EvalID == "" {
+        t.Fatalf("bad: %#v", r)
+      }
+    }
 	})
 }
 
@@ -1545,20 +1573,22 @@ func TestHTTP_JobPlan(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.JobSpecificRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check the response
-		plan := obj.(structs.JobPlanResponse)
-		if plan.Annotations == nil {
-			t.Fatalf("bad: %v", plan)
-		}
+      // Check the response
+      plan := obj.(structs.JobPlanResponse)
+      if plan.Annotations == nil {
+        t.Fatalf("bad: %v", plan)
+      }
 
-		if plan.Diff == nil {
-			t.Fatalf("bad: %v", plan)
-		}
+      if plan.Diff == nil {
+        t.Fatalf("bad: %v", plan)
+      }
+    }
 	})
 }
 
@@ -1625,13 +1655,15 @@ func TestHTTP_JobPlanRegion(t *testing.T) {
 				respW := httptest.NewRecorder()
 
 				// Make the request
-				obj, err := s.Server.JobSpecificRequest(respW, req)
-				require.NoError(t, err)
+        for _, srv := range s.Servers {
+          obj, err := srv.JobSpecificRequest(respW, req)
+          require.NoError(t, err)
 
-				// Check the response
-				plan := obj.(structs.JobPlanResponse)
-				require.NotNil(t, plan.Annotations)
-				require.NotNil(t, plan.Diff)
+          // Check the response
+          plan := obj.(structs.JobPlanResponse)
+          require.NotNil(t, plan.Annotations)
+          require.NotNil(t, plan.Diff)
+        }
 			})
 		})
 	}
@@ -1675,20 +1707,22 @@ func TestHTTP_JobDispatch(t *testing.T) {
 		respW.Flush()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req2)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.JobSpecificRequest(respW, req2)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check the response
-		dispatch := obj.(structs.JobDispatchResponse)
-		if dispatch.EvalID == "" {
-			t.Fatalf("bad: %v", dispatch)
-		}
+      // Check the response
+      dispatch := obj.(structs.JobDispatchResponse)
+      if dispatch.EvalID == "" {
+        t.Fatalf("bad: %v", dispatch)
+      }
 
-		if dispatch.DispatchedJobID == "" {
-			t.Fatalf("bad: %v", dispatch)
-		}
+      if dispatch.DispatchedJobID == "" {
+        t.Fatalf("bad: %v", dispatch)
+      }
+    }
 	})
 }
 
@@ -1733,21 +1767,23 @@ func TestHTTP_JobRevert(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.JobSpecificRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check the response
-		revertResp := obj.(structs.JobRegisterResponse)
-		if revertResp.EvalID == "" {
-			t.Fatalf("bad: %v", revertResp)
-		}
+      // Check the response
+      revertResp := obj.(structs.JobRegisterResponse)
+      if revertResp.EvalID == "" {
+        t.Fatalf("bad: %v", revertResp)
+      }
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
+      // Check for the index
+      if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+        t.Fatalf("missing index")
+      }
+    }
 	})
 }
 
@@ -1791,21 +1827,23 @@ func TestHTTP_JobStable(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.JobSpecificRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+    for _, srv := range s.Servers {
+      obj, err := srv.JobSpecificRequest(respW, req)
+      if err != nil {
+        t.Fatalf("err: %v", err)
+      }
 
-		// Check the response
-		stableResp := obj.(structs.JobStabilityResponse)
-		if stableResp.Index == 0 {
-			t.Fatalf("bad: %v", stableResp)
-		}
+      // Check the response
+      stableResp := obj.(structs.JobStabilityResponse)
+      if stableResp.Index == 0 {
+        t.Fatalf("bad: %v", stableResp)
+      }
 
-		// Check for the index
-		if respW.HeaderMap.Get("X-Nomad-Index") == "" {
-			t.Fatalf("missing index")
-		}
+      // Check for the index
+      if respW.HeaderMap.Get("X-Nomad-Index") == "" {
+        t.Fatalf("missing index")
+      }
+    }
 	})
 }
 
@@ -3276,12 +3314,14 @@ func TestHTTP_JobValidate_SystemMigrate(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.ValidateJobRequest(respW, req)
-		require.NoError(t, err)
+    for _, srv := range s.Servers {
+      obj, err := srv.ValidateJobRequest(respW, req)
+      require.NoError(t, err)
 
-		// Check the response
-		resp := obj.(structs.JobValidateResponse)
-		require.Contains(t, resp.Error, `Job type "system" does not allow migrate block`)
+      // Check the response
+      resp := obj.(structs.JobValidateResponse)
+      require.Contains(t, resp.Error, `Job type "system" does not allow migrate block`)
+    }
 	})
 }
 

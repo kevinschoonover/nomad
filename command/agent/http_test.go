@@ -64,7 +64,9 @@ func BenchmarkHTTPRequests(b *testing.B) {
 		for pb.Next() {
 			resp := httptest.NewRecorder()
 			req, _ := http.NewRequest("GET", "/v1/kv/key", nil)
-			s.Server.wrap(handler)(resp, req)
+      for _, srv := range s.Servers {
+        srv.wrap(handler)(resp, req)
+      }
 		}
 	})
 }
@@ -223,13 +225,14 @@ func TestSetHeaders(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("GET", "/v1/kv/key", nil)
-	s.Server.wrap(handler)(resp, req)
-	header := resp.Header().Get("foo")
+  for _, srv := range s.Servers {
+    srv.wrap(handler)(resp, req)
+    header := resp.Header().Get("foo")
 
-	if header != "bar" {
-		t.Fatalf("expected header: %v, actual: %v", "bar", header)
-	}
-
+    if header != "bar" {
+      t.Fatalf("expected header: %v, actual: %v", "bar", header)
+    }
+  }
 }
 
 func TestContentTypeIsJSON(t *testing.T) {
@@ -244,13 +247,15 @@ func TestContentTypeIsJSON(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("GET", "/v1/kv/key", nil)
-	s.Server.wrap(handler)(resp, req)
+  for _, srv := range s.Servers {
+    srv.wrap(handler)(resp, req)
 
-	contentType := resp.Header().Get("Content-Type")
+    contentType := resp.Header().Get("Content-Type")
 
-	if contentType != "application/json" {
-		t.Fatalf("Content-Type header was not 'application/json'")
-	}
+    if contentType != "application/json" {
+      t.Fatalf("Content-Type header was not 'application/json'")
+    }
+  }
 }
 
 func TestWrapNonJSON(t *testing.T) {
@@ -265,11 +270,11 @@ func TestWrapNonJSON(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("GET", "/v1/kv/key", nil)
-	s.Server.wrapNonJSON(handler)(resp, req)
-
-	respBody, _ := ioutil.ReadAll(resp.Body)
-	require.Equal(t, respBody, []byte("test response"))
-
+  for _, srv := range s.Servers {
+    srv.wrapNonJSON(handler)(resp, req)
+    respBody, _ := ioutil.ReadAll(resp.Body)
+    require.Equal(t, respBody, []byte("test response"))
+  }
 }
 
 func TestWrapNonJSON_Error(t *testing.T) {
@@ -289,20 +294,24 @@ func TestWrapNonJSON_Error(t *testing.T) {
 	{
 		resp := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/v1/kv/key", nil)
-		s.Server.wrapNonJSON(handlerRPCErr)(resp, req)
-		respBody, _ := ioutil.ReadAll(resp.Body)
-		require.Equal(t, []byte("not found"), respBody)
-		require.Equal(t, 404, resp.Code)
+    for _, srv := range s.Servers {
+      srv.wrapNonJSON(handlerRPCErr)(resp, req)
+      respBody, _ := ioutil.ReadAll(resp.Body)
+      require.Equal(t, []byte("not found"), respBody)
+      require.Equal(t, 404, resp.Code)
+    }
 	}
 
 	// CodedError
 	{
 		resp := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/v1/kv/key", nil)
-		s.Server.wrapNonJSON(handlerCodedErr)(resp, req)
-		respBody, _ := ioutil.ReadAll(resp.Body)
-		require.Equal(t, []byte("unprocessable"), respBody)
-		require.Equal(t, 422, resp.Code)
+    for _, srv := range s.Servers {
+      srv.wrapNonJSON(handlerCodedErr)(resp, req)
+      respBody, _ := ioutil.ReadAll(resp.Body)
+      require.Equal(t, []byte("unprocessable"), respBody)
+      require.Equal(t, 422, resp.Code)
+    }
 	}
 
 }
@@ -335,29 +344,31 @@ func testPrettyPrint(pretty string, prettyFmt bool, t *testing.T) {
 
 	urlStr := "/v1/job/foo?" + pretty
 	req, _ := http.NewRequest("GET", urlStr, nil)
-	s.Server.wrap(handler)(resp, req)
+  for _, srv := range s.Servers {
+    srv.wrap(handler)(resp, req)
 
-	var expected bytes.Buffer
-	var err error
-	if prettyFmt {
-		enc := codec.NewEncoder(&expected, structs.JsonHandlePretty)
-		err = enc.Encode(r)
-		expected.WriteByte('\n')
-	} else {
-		enc := codec.NewEncoder(&expected, structs.JsonHandleWithExtensions)
-		err = enc.Encode(r)
-	}
-	if err != nil {
-		t.Fatalf("failed to encode: %v", err)
-	}
-	actual, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
+    var expected bytes.Buffer
+    var err error
+    if prettyFmt {
+      enc := codec.NewEncoder(&expected, structs.JsonHandlePretty)
+      err = enc.Encode(r)
+      expected.WriteByte('\n')
+    } else {
+      enc := codec.NewEncoder(&expected, structs.JsonHandleWithExtensions)
+      err = enc.Encode(r)
+    }
+    if err != nil {
+      t.Fatalf("failed to encode: %v", err)
+    }
+    actual, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+      t.Fatalf("err: %s", err)
+    }
 
-	if !bytes.Equal(expected.Bytes(), actual) {
-		t.Fatalf("bad:\nexpected:\t%q\nactual:\t\t%q", expected.String(), string(actual))
-	}
+    if !bytes.Equal(expected.Bytes(), actual) {
+      t.Fatalf("bad:\nexpected:\t%q\nactual:\t\t%q", expected.String(), string(actual))
+    }
+  }
 }
 
 func TestPermissionDenied(t *testing.T) {
@@ -373,8 +384,10 @@ func TestPermissionDenied(t *testing.T) {
 		}
 
 		req, _ := http.NewRequest("GET", "/v1/job/foo", nil)
-		s.Server.wrap(handler)(resp, req)
-		assert.Equal(t, resp.Code, 403)
+    for _, srv := range s.Servers {
+      srv.wrap(handler)(resp, req)
+      assert.Equal(t, resp.Code, 403)
+    }
 	}
 
 	// When remote RPC is used the errors have "rpc error: " prependend
@@ -385,8 +398,10 @@ func TestPermissionDenied(t *testing.T) {
 		}
 
 		req, _ := http.NewRequest("GET", "/v1/job/foo", nil)
-		s.Server.wrap(handler)(resp, req)
-		assert.Equal(t, resp.Code, 403)
+    for _, srv := range s.Servers {
+      srv.wrap(handler)(resp, req)
+      assert.Equal(t, resp.Code, 403)
+    }
 	}
 }
 
@@ -403,8 +418,10 @@ func TestTokenNotFound(t *testing.T) {
 
 	urlStr := "/v1/job/foo"
 	req, _ := http.NewRequest("GET", urlStr, nil)
-	s.Server.wrap(handler)(resp, req)
-	assert.Equal(t, resp.Code, 403)
+  for _, srv := range s.Servers {
+    srv.wrap(handler)(resp, req)
+    assert.Equal(t, resp.Code, 403)
+  }
 }
 
 func TestParseWait(t *testing.T) {
@@ -510,10 +527,12 @@ func TestParseRegion(t *testing.T) {
 	}
 
 	var region string
-	s.Server.parseRegion(req, &region)
-	if region != "foo" {
-		t.Fatalf("bad %s", region)
-	}
+  for _, srv := range s.Servers {
+    srv.parseRegion(req, &region)
+    if region != "foo" {
+      t.Fatalf("bad %s", region)
+    }
+  }
 
 	region = ""
 	req, err = http.NewRequest("GET", "/v1/jobs", nil)
@@ -521,10 +540,12 @@ func TestParseRegion(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 
-	s.Server.parseRegion(req, &region)
-	if region != "global" {
-		t.Fatalf("bad %s", region)
-	}
+  for _, srv := range s.Servers {
+    srv.parseRegion(req, &region)
+    if region != "global" {
+      t.Fatalf("bad %s", region)
+    }
+  }
 }
 
 func TestParseToken(t *testing.T) {
@@ -539,10 +560,12 @@ func TestParseToken(t *testing.T) {
 	}
 
 	var token string
-	s.Server.parseToken(req, &token)
-	if token != "foobar" {
-		t.Fatalf("bad %s", token)
-	}
+  for _, srv := range s.Servers {
+    srv.parseToken(req, &token)
+    if token != "foobar" {
+      t.Fatalf("bad %s", token)
+    }
+  }
 }
 
 func TestParseBool(t *testing.T) {
@@ -1082,7 +1105,7 @@ func TestHTTPServer_Limits_OK(t *testing.T) {
 		// Increase deadline to detect timeouts
 		deadline := timeoutDeadline + time.Second
 
-		conn, err := net.DialTimeout("tcp", a.Server.Addr, deadline)
+		conn, err := net.DialTimeout("tcp", a.Servers[0].Addr, deadline)
 		require.NoError(t, err)
 		defer func() {
 			require.NoError(t, conn.Close())
@@ -1107,7 +1130,7 @@ func TestHTTPServer_Limits_OK(t *testing.T) {
 
 			// Assertions don't require certificate validation
 			conf := api.DefaultConfig()
-			conf.Address = a.HTTPAddr()
+			conf.Address = a.HTTPAddrs()[0]
 			conf.TLSConfig.Insecure = true
 			client, err := api.NewClient(conf)
 			require.NoError(t, err)
@@ -1307,9 +1330,13 @@ func TestHTTPServer_Limits_OK(t *testing.T) {
 				// untracked.
 				time.Sleep(1 * time.Second)
 
-				assertLimit(t, s.Server.Addr, *tc.limit, tc.tls)
+        for _, srv := range s.Servers {
+          assertLimit(t, srv.Addr, *tc.limit, tc.tls)
+        }
 			} else {
-				assertNoLimit(t, s.Server.Addr)
+        for _, srv := range s.Servers {
+          assertNoLimit(t, srv.Addr)
+        }
 			}
 		})
 	}

@@ -39,55 +39,65 @@ func TestHTTP_AgentSelf(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.AgentSelfRequest(respW, req)
-		require.NoError(err)
+		for _, srv := range s.Servers {
+			obj, err := srv.AgentSelfRequest(respW, req)
+			require.NoError(err)
 
-		// Check the job
-		self := obj.(agentSelf)
-		require.NotNil(self.Config)
-		require.NotNil(self.Config.ACL)
-		require.NotEmpty(self.Stats)
+			// Check the job
+			self := obj.(agentSelf)
+			require.NotNil(self.Config)
+			require.NotNil(self.Config.ACL)
+			require.NotEmpty(self.Stats)
 
-		// Check the Vault config
-		require.Empty(self.Config.Vault.Token)
+			// Check the Vault config
+			require.Empty(self.Config.Vault.Token)
+		}
 
 		// Assign a Vault token and require it is redacted.
 		s.Config.Vault.Token = "badc0deb-adc0-deba-dc0d-ebadc0debadc"
 		respW = httptest.NewRecorder()
-		obj, err = s.Server.AgentSelfRequest(respW, req)
-		require.NoError(err)
-		self = obj.(agentSelf)
-		require.Equal("<redacted>", self.Config.Vault.Token)
+		for _, srv := range s.Servers {
+			obj, err := srv.AgentSelfRequest(respW, req)
+			require.NoError(err)
+			self := obj.(agentSelf)
+			require.Equal("<redacted>", self.Config.Vault.Token)
+		}
 
 		// Assign a ReplicationToken token and require it is redacted.
 		s.Config.ACL.ReplicationToken = "badc0deb-adc0-deba-dc0d-ebadc0debadc"
 		respW = httptest.NewRecorder()
-		obj, err = s.Server.AgentSelfRequest(respW, req)
-		require.NoError(err)
-		self = obj.(agentSelf)
-		require.Equal("<redacted>", self.Config.ACL.ReplicationToken)
+		for _, srv := range s.Servers {
+			obj, err := srv.AgentSelfRequest(respW, req)
+			require.NoError(err)
+			self := obj.(agentSelf)
+			require.Equal("<redacted>", self.Config.ACL.ReplicationToken)
 
-		// Check the Consul config
-		require.Empty(self.Config.Consul.Token)
+			// Check the Consul config
+			require.Empty(self.Config.Consul.Token)
+		}
 
 		// Assign a Consul token and require it is redacted.
 		s.Config.Consul.Token = "badc0deb-adc0-deba-dc0d-ebadc0debadc"
 		respW = httptest.NewRecorder()
-		obj, err = s.Server.AgentSelfRequest(respW, req)
-		require.NoError(err)
-		self = obj.(agentSelf)
-		require.Equal("<redacted>", self.Config.Consul.Token)
+		for _, srv := range s.Servers {
+			obj, err := srv.AgentSelfRequest(respW, req)
+			require.NoError(err)
+			self := obj.(agentSelf)
+			require.Equal("<redacted>", self.Config.Consul.Token)
 
-		// Check the Circonus config
-		require.Empty(self.Config.Telemetry.CirconusAPIToken)
+			// Check the Circonus config
+			require.Empty(self.Config.Telemetry.CirconusAPIToken)
+		}
 
 		// Assign a Consul token and require it is redacted.
 		s.Config.Telemetry.CirconusAPIToken = "badc0deb-adc0-deba-dc0d-ebadc0debadc"
 		respW = httptest.NewRecorder()
-		obj, err = s.Server.AgentSelfRequest(respW, req)
-		require.NoError(err)
-		self = obj.(agentSelf)
-		require.Equal("<redacted>", self.Config.Telemetry.CirconusAPIToken)
+		for _, srv := range s.Servers {
+			obj, err := srv.AgentSelfRequest(respW, req)
+			require.NoError(err)
+			self := obj.(agentSelf)
+			require.Equal("<redacted>", self.Config.Telemetry.CirconusAPIToken)
+		}
 	})
 }
 
@@ -105,9 +115,11 @@ func TestHTTP_AgentSelf_ACL(t *testing.T) {
 		// Try request without a token and expect failure
 		{
 			respW := httptest.NewRecorder()
-			_, err := s.Server.AgentSelfRequest(respW, req)
-			require.NotNil(err)
-			require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			for _, srv := range s.Servers {
+				_, err := srv.AgentSelfRequest(respW, req)
+				require.NotNil(err)
+				require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			}
 		}
 
 		// Try request with an invalid token and expect failure
@@ -115,9 +127,11 @@ func TestHTTP_AgentSelf_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1005, "invalid", mock.NodePolicy(acl.PolicyWrite))
 			setToken(req, token)
-			_, err := s.Server.AgentSelfRequest(respW, req)
-			require.NotNil(err)
-			require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			for _, srv := range s.Servers {
+				_, err := srv.AgentSelfRequest(respW, req)
+				require.NotNil(err)
+				require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			}
 		}
 
 		// Try request with a valid token
@@ -125,24 +139,28 @@ func TestHTTP_AgentSelf_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1007, "valid", mock.AgentPolicy(acl.PolicyWrite))
 			setToken(req, token)
-			obj, err := s.Server.AgentSelfRequest(respW, req)
-			require.Nil(err)
+			for _, srv := range s.Servers {
+				obj, err := srv.AgentSelfRequest(respW, req)
+				require.Nil(err)
 
-			self := obj.(agentSelf)
-			require.NotNil(self.Config)
-			require.NotNil(self.Stats)
+				self := obj.(agentSelf)
+				require.NotNil(self.Config)
+				require.NotNil(self.Stats)
+			}
 		}
 
 		// Try request with a root token
 		{
 			respW := httptest.NewRecorder()
 			setToken(req, s.RootToken)
-			obj, err := s.Server.AgentSelfRequest(respW, req)
-			require.Nil(err)
+			for _, srv := range s.Servers {
+				obj, err := srv.AgentSelfRequest(respW, req)
+				require.Nil(err)
 
-			self := obj.(agentSelf)
-			require.NotNil(self.Config)
-			require.NotNil(self.Stats)
+				self := obj.(agentSelf)
+				require.NotNil(self.Config)
+				require.NotNil(self.Stats)
+			}
 		}
 	})
 }
@@ -163,18 +181,20 @@ func TestHTTP_AgentJoin(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.AgentJoinRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+		for _, srv := range s.Servers {
+			obj, err := srv.AgentJoinRequest(respW, req)
+			if err != nil {
+				t.Fatalf("err: %v", err)
+			}
 
-		// Check the job
-		join := obj.(joinResult)
-		if join.NumJoined != 2 {
-			t.Fatalf("bad: %#v", join)
-		}
-		if join.Error != "" {
-			t.Fatalf("bad: %#v", join)
+			// Check the job
+			join := obj.(joinResult)
+			if join.NumJoined != 2 {
+				t.Fatalf("bad: %#v", join)
+			}
+			if join.Error != "" {
+				t.Fatalf("bad: %#v", join)
+			}
 		}
 	})
 }
@@ -190,15 +210,17 @@ func TestHTTP_AgentMembers(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		obj, err := s.Server.AgentMembersRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
+		for _, srv := range s.Servers {
+			obj, err := srv.AgentMembersRequest(respW, req)
+			if err != nil {
+				t.Fatalf("err: %v", err)
+			}
 
-		// Check the job
-		members := obj.(structs.ServerMembersResponse)
-		if len(members.Members) != 1 {
-			t.Fatalf("bad: %#v", members.Members)
+			// Check the job
+			members := obj.(structs.ServerMembersResponse)
+			if len(members.Members) != 1 {
+				t.Fatalf("bad: %#v", members.Members)
+			}
 		}
 	})
 }
@@ -217,9 +239,11 @@ func TestHTTP_AgentMembers_ACL(t *testing.T) {
 		// Try request without a token and expect failure
 		{
 			respW := httptest.NewRecorder()
-			_, err := s.Server.AgentMembersRequest(respW, req)
-			require.NotNil(err)
-			require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			for _, srv := range s.Servers {
+				_, err := srv.AgentMembersRequest(respW, req)
+				require.NotNil(err)
+				require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			}
 		}
 
 		// Try request with an invalid token and expect failure
@@ -227,9 +251,11 @@ func TestHTTP_AgentMembers_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1005, "invalid", mock.AgentPolicy(acl.PolicyWrite))
 			setToken(req, token)
-			_, err := s.Server.AgentMembersRequest(respW, req)
-			require.NotNil(err)
-			require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			for _, srv := range s.Servers {
+				_, err := srv.AgentMembersRequest(respW, req)
+				require.NotNil(err)
+				require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			}
 		}
 
 		// Try request with a valid token
@@ -237,22 +263,26 @@ func TestHTTP_AgentMembers_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1007, "valid", mock.NodePolicy(acl.PolicyRead))
 			setToken(req, token)
-			obj, err := s.Server.AgentMembersRequest(respW, req)
-			require.Nil(err)
+			for _, srv := range s.Servers {
+				obj, err := srv.AgentMembersRequest(respW, req)
+				require.Nil(err)
 
-			members := obj.(structs.ServerMembersResponse)
-			require.Len(members.Members, 1)
+				members := obj.(structs.ServerMembersResponse)
+				require.Len(members.Members, 1)
+			}
 		}
 
 		// Try request with a root token
 		{
 			respW := httptest.NewRecorder()
 			setToken(req, s.RootToken)
-			obj, err := s.Server.AgentMembersRequest(respW, req)
-			require.Nil(err)
+			for _, srv := range s.Servers {
+				obj, err := srv.AgentMembersRequest(respW, req)
+				require.Nil(err)
 
-			members := obj.(structs.ServerMembersResponse)
-			require.Len(members.Members, 1)
+				members := obj.(structs.ServerMembersResponse)
+				require.Len(members.Members, 1)
+			}
 		}
 	})
 }
@@ -267,9 +297,11 @@ func TestHTTP_AgentMonitor(t *testing.T) {
 			resp := newClosableRecorder()
 
 			// Make the request
-			_, err = s.Server.AgentMonitor(resp, req)
-			httpErr := err.(HTTPCodedError).Code()
-			require.Equal(t, 400, httpErr)
+			for _, srv := range s.Servers {
+				_, err = srv.AgentMonitor(resp, req)
+				httpErr := err.(HTTPCodedError).Code()
+				require.Equal(t, 400, httpErr)
+			}
 		})
 	})
 
@@ -280,9 +312,11 @@ func TestHTTP_AgentMonitor(t *testing.T) {
 			resp := newClosableRecorder()
 
 			// Make the request
-			_, err = s.Server.AgentMonitor(resp, req)
-			httpErr := err.(HTTPCodedError).Code()
-			require.Equal(t, 400, httpErr)
+			for _, srv := range s.Servers {
+				_, err = srv.AgentMonitor(resp, req)
+				httpErr := err.(HTTPCodedError).Code()
+				require.Equal(t, 400, httpErr)
+			}
 		})
 	})
 
@@ -294,8 +328,10 @@ func TestHTTP_AgentMonitor(t *testing.T) {
 			defer resp.Close()
 
 			go func() {
-				_, err = s.Server.AgentMonitor(resp, req)
-				assert.NoError(t, err)
+				for _, srv := range s.Servers {
+					_, err = srv.AgentMonitor(resp, req)
+					assert.NoError(t, err)
+				}
 			}()
 
 			// send the same log until monitor sink is set up
@@ -303,7 +339,7 @@ func TestHTTP_AgentMonitor(t *testing.T) {
 			tried := 0
 			testutil.WaitForResult(func() (bool, error) {
 				if tried < maxLogAttempts {
-					s.Server.logger.Warn("log that should be sent")
+					s.Servers[0].logger.Warn("log that should be sent")
 					tried++
 				}
 
@@ -328,8 +364,10 @@ func TestHTTP_AgentMonitor(t *testing.T) {
 			defer resp.Close()
 
 			go func() {
-				_, err = s.Server.AgentMonitor(resp, req)
-				assert.NoError(t, err)
+				for _, srv := range s.Servers {
+					_, err = srv.AgentMonitor(resp, req)
+					assert.NoError(t, err)
+				}
 			}()
 
 			// send the same log until monitor sink is set up
@@ -337,7 +375,7 @@ func TestHTTP_AgentMonitor(t *testing.T) {
 			tried := 0
 			testutil.WaitForResult(func() (bool, error) {
 				if tried < maxLogAttempts {
-					s.Server.logger.Debug("log that should be sent")
+					s.Servers[0].logger.Debug("log that should be sent")
 					tried++
 				}
 
@@ -362,8 +400,10 @@ func TestHTTP_AgentMonitor(t *testing.T) {
 			defer resp.Close()
 
 			go func() {
-				_, err = s.Server.AgentMonitor(resp, req)
-				assert.NoError(t, err)
+				for _, srv := range s.Servers {
+					_, err = srv.AgentMonitor(resp, req)
+					assert.NoError(t, err)
+				}
 			}()
 
 			// send the same log until monitor sink is set up
@@ -372,8 +412,8 @@ func TestHTTP_AgentMonitor(t *testing.T) {
 			out := ""
 			testutil.WaitForResult(func() (bool, error) {
 				if tried < maxLogAttempts {
-					s.Server.logger.Debug("log that should not be sent")
-					s.Server.logger.Warn("log that should be sent")
+					s.Servers[0].logger.Debug("log that should not be sent")
+					s.Servers[0].logger.Warn("log that should be sent")
 					tried++
 				}
 				output, err := ioutil.ReadAll(resp.Body)
@@ -404,8 +444,10 @@ func TestHTTP_AgentMonitor(t *testing.T) {
 			go func() {
 				// set server to nil to monitor as client
 				s.Agent.server = nil
-				_, err = s.Server.AgentMonitor(resp, req)
-				assert.NoError(t, err)
+				for _, srv := range s.Servers {
+					_, err = srv.AgentMonitor(resp, req)
+					assert.NoError(t, err)
+				}
 			}()
 
 			// send the same log until monitor sink is set up
@@ -508,13 +550,15 @@ func TestAgent_PprofRequest_Permissions(t *testing.T) {
 						setToken(req, token)
 					}
 
-					resp, err := s.Server.AgentPprofRequest(respW, req)
-					if tc.ok {
-						require.NoError(t, err)
-						require.NotNil(t, resp)
-					} else {
-						require.Error(t, err)
-						require.Equal(t, structs.ErrPermissionDenied.Error(), err.Error())
+					for _, srv := range s.Servers {
+						resp, err := srv.AgentPprofRequest(respW, req)
+						if tc.ok {
+							require.NoError(t, err)
+							require.NotNil(t, resp)
+						} else {
+							require.Error(t, err)
+							require.Equal(t, structs.ErrPermissionDenied.Error(), err.Error())
+						}
 					}
 				})
 			})
@@ -598,14 +642,16 @@ func TestAgent_PprofRequest(t *testing.T) {
 				require.Nil(t, err)
 				respW := httptest.NewRecorder()
 
-				resp, err := s.Server.AgentPprofRequest(respW, req)
+				for _, srv := range s.Servers {
+					resp, err := srv.AgentPprofRequest(respW, req)
 
-				if tc.expectedErr != "" {
-					require.Error(t, err)
-					require.EqualError(t, err, tc.expectedErr)
-				} else {
-					require.NoError(t, err)
-					require.NotNil(t, resp)
+					if tc.expectedErr != "" {
+						require.Error(t, err)
+						require.EqualError(t, err, tc.expectedErr)
+					} else {
+						require.NoError(t, err)
+						require.NotNil(t, resp)
+					}
 				}
 			})
 		})
@@ -642,9 +688,11 @@ func TestHTTP_AgentForceLeave(t *testing.T) {
 		respW := httptest.NewRecorder()
 
 		// Make the request
-		_, err = s.Server.AgentForceLeaveRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %v", err)
+		for _, srv := range s.Servers {
+			_, err = srv.AgentForceLeaveRequest(respW, req)
+			if err != nil {
+				t.Fatalf("err: %v", err)
+			}
 		}
 	})
 }
@@ -663,9 +711,11 @@ func TestHTTP_AgentForceLeave_ACL(t *testing.T) {
 		// Try request without a token and expect failure
 		{
 			respW := httptest.NewRecorder()
-			_, err := s.Server.AgentForceLeaveRequest(respW, req)
-			require.NotNil(err)
-			require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			for _, srv := range s.Servers {
+				_, err := srv.AgentForceLeaveRequest(respW, req)
+				require.NotNil(err)
+				require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			}
 		}
 
 		// Try request with an invalid token and expect failure
@@ -673,9 +723,11 @@ func TestHTTP_AgentForceLeave_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1005, "invalid", mock.NodePolicy(acl.PolicyRead))
 			setToken(req, token)
-			_, err := s.Server.AgentForceLeaveRequest(respW, req)
-			require.NotNil(err)
-			require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			for _, srv := range s.Servers {
+				_, err := srv.AgentForceLeaveRequest(respW, req)
+				require.NotNil(err)
+				require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			}
 		}
 
 		// Try request with a valid token
@@ -683,18 +735,22 @@ func TestHTTP_AgentForceLeave_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1007, "valid", mock.AgentPolicy(acl.PolicyWrite))
 			setToken(req, token)
-			_, err := s.Server.AgentForceLeaveRequest(respW, req)
-			require.Nil(err)
-			require.Equal(http.StatusOK, respW.Code)
+			for _, srv := range s.Servers {
+				_, err := srv.AgentForceLeaveRequest(respW, req)
+				require.Nil(err)
+				require.Equal(http.StatusOK, respW.Code)
+			}
 		}
 
 		// Try request with a root token
 		{
 			respW := httptest.NewRecorder()
 			setToken(req, s.RootToken)
-			_, err := s.Server.AgentForceLeaveRequest(respW, req)
-			require.Nil(err)
-			require.Equal(http.StatusOK, respW.Code)
+			for _, srv := range s.Servers {
+				_, err := srv.AgentForceLeaveRequest(respW, req)
+				require.Nil(err)
+				require.Equal(http.StatusOK, respW.Code)
+			}
 		}
 	})
 }
@@ -731,9 +787,11 @@ func TestHTTP_AgentSetServers(t *testing.T) {
 
 		// Send the request
 		respW := httptest.NewRecorder()
-		_, err = s.Server.AgentServersRequest(respW, req)
-		require.NotNil(err)
-		require.Contains(err.Error(), "missing server address")
+		for _, srv := range s.Servers {
+			_, err = srv.AgentServersRequest(respW, req)
+			require.NotNil(err)
+			require.Contains(err.Error(), "missing server address")
+		}
 
 		// Create a valid request
 		req, err = http.NewRequest("PUT", "/v1/agent/servers?address=127.0.0.1%3A4647&address=127.0.0.2%3A4647&address=127.0.0.3%3A4647", nil)
@@ -741,8 +799,10 @@ func TestHTTP_AgentSetServers(t *testing.T) {
 
 		// Send the request which should fail
 		respW = httptest.NewRecorder()
-		_, err = s.Server.AgentServersRequest(respW, req)
-		require.NotNil(err)
+		for _, srv := range s.Servers {
+			_, err = srv.AgentServersRequest(respW, req)
+			require.NotNil(err)
+		}
 
 		// Retrieve the servers again
 		req, err = http.NewRequest("GET", "/v1/agent/servers", nil)
@@ -753,11 +813,13 @@ func TestHTTP_AgentSetServers(t *testing.T) {
 		expected := []string{
 			s.GetConfig().AdvertiseAddrs.RPC,
 		}
-		out, err := s.Server.AgentServersRequest(respW, req)
-		require.Nil(err)
-		servers := out.([]string)
-		require.Len(servers, len(expected))
-		require.Equal(expected, servers)
+		for _, srv := range s.Servers {
+			out, err := srv.AgentServersRequest(respW, req)
+			require.Nil(err)
+			servers := out.([]string)
+			require.Len(servers, len(expected))
+			require.Equal(expected, servers)
+		}
 	})
 }
 
@@ -797,9 +859,11 @@ func TestHTTP_AgentSetServers_ACL(t *testing.T) {
 		// Try request without a token and expect failure
 		{
 			respW := httptest.NewRecorder()
-			_, err := s.Server.AgentServersRequest(respW, req)
-			require.NotNil(err)
-			require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			for _, srv := range s.Servers {
+				_, err := srv.AgentServersRequest(respW, req)
+				require.NotNil(err)
+				require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			}
 		}
 
 		// Try request with an invalid token and expect failure
@@ -807,9 +871,11 @@ func TestHTTP_AgentSetServers_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1005, "invalid", mock.NodePolicy(acl.PolicyRead))
 			setToken(req, token)
-			_, err := s.Server.AgentServersRequest(respW, req)
-			require.NotNil(err)
-			require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			for _, srv := range s.Servers {
+				_, err := srv.AgentServersRequest(respW, req)
+				require.NotNil(err)
+				require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			}
 		}
 
 		// Try request with a valid token
@@ -817,18 +883,22 @@ func TestHTTP_AgentSetServers_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1007, "valid", mock.AgentPolicy(acl.PolicyWrite))
 			setToken(req, token)
-			_, err := s.Server.AgentServersRequest(respW, req)
-			require.Nil(err)
-			require.Equal(http.StatusOK, respW.Code)
+			for _, srv := range s.Servers {
+				_, err := srv.AgentServersRequest(respW, req)
+				require.Nil(err)
+				require.Equal(http.StatusOK, respW.Code)
+			}
 		}
 
 		// Try request with a root token
 		{
 			respW := httptest.NewRecorder()
 			setToken(req, s.RootToken)
-			_, err := s.Server.AgentServersRequest(respW, req)
-			require.Nil(err)
-			require.Equal(http.StatusOK, respW.Code)
+			for _, srv := range s.Servers {
+				_, err := srv.AgentServersRequest(respW, req)
+				require.Nil(err)
+				require.Equal(http.StatusOK, respW.Code)
+			}
 		}
 	})
 }
@@ -851,9 +921,11 @@ func TestHTTP_AgentListServers_ACL(t *testing.T) {
 		// Try request without a token and expect failure
 		{
 			respW := httptest.NewRecorder()
-			_, err := s.Server.AgentServersRequest(respW, req)
-			require.NotNil(err)
-			require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			for _, srv := range s.Servers {
+				_, err := srv.AgentServersRequest(respW, req)
+				require.NotNil(err)
+				require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			}
 		}
 
 		// Try request with an invalid token and expect failure
@@ -861,9 +933,11 @@ func TestHTTP_AgentListServers_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1005, "invalid", mock.NodePolicy(acl.PolicyRead))
 			setToken(req, token)
-			_, err := s.Server.AgentServersRequest(respW, req)
-			require.NotNil(err)
-			require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			for _, srv := range s.Servers {
+				_, err := srv.AgentServersRequest(respW, req)
+				require.NotNil(err)
+				require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			}
 		}
 
 		// Wait for client to have a server
@@ -878,22 +952,26 @@ func TestHTTP_AgentListServers_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1007, "valid", mock.AgentPolicy(acl.PolicyRead))
 			setToken(req, token)
-			out, err := s.Server.AgentServersRequest(respW, req)
-			require.Nil(err)
-			servers := out.([]string)
-			require.Len(servers, len(expected))
-			require.Equal(expected, servers)
+			for _, srv := range s.Servers {
+				out, err := srv.AgentServersRequest(respW, req)
+				require.Nil(err)
+				servers := out.([]string)
+				require.Len(servers, len(expected))
+				require.Equal(expected, servers)
+			}
 		}
 
 		// Try request with a root token
 		{
 			respW := httptest.NewRecorder()
 			setToken(req, s.RootToken)
-			out, err := s.Server.AgentServersRequest(respW, req)
-			require.Nil(err)
-			servers := out.([]string)
-			require.Len(servers, len(expected))
-			require.Equal(expected, servers)
+			for _, srv := range s.Servers {
+				out, err := srv.AgentServersRequest(respW, req)
+				require.Nil(err)
+				servers := out.([]string)
+				require.Len(servers, len(expected))
+				require.Equal(expected, servers)
+			}
 		}
 	})
 }
@@ -912,10 +990,12 @@ func TestHTTP_AgentListKeys(t *testing.T) {
 		}
 		respW := httptest.NewRecorder()
 
-		out, err := s.Server.KeyringOperationRequest(respW, req)
-		require.Nil(t, err)
-		kresp := out.(structs.KeyringResponse)
-		require.Len(t, kresp.Keys, 1)
+		for _, srv := range s.Servers {
+			out, err := srv.KeyringOperationRequest(respW, req)
+			require.Nil(t, err)
+			kresp := out.(structs.KeyringResponse)
+			require.Len(t, kresp.Keys, 1)
+		}
 	})
 }
 
@@ -939,9 +1019,11 @@ func TestHTTP_AgentListKeys_ACL(t *testing.T) {
 		// Try request without a token and expect failure
 		{
 			respW := httptest.NewRecorder()
-			_, err := s.Server.KeyringOperationRequest(respW, req)
-			require.NotNil(err)
-			require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			for _, srv := range s.Servers {
+				_, err := srv.KeyringOperationRequest(respW, req)
+				require.NotNil(err)
+				require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			}
 		}
 
 		// Try request with an invalid token and expect failure
@@ -949,9 +1031,11 @@ func TestHTTP_AgentListKeys_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1005, "invalid", mock.AgentPolicy(acl.PolicyRead))
 			setToken(req, token)
-			_, err := s.Server.KeyringOperationRequest(respW, req)
-			require.NotNil(err)
-			require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			for _, srv := range s.Servers {
+				_, err := srv.KeyringOperationRequest(respW, req)
+				require.NotNil(err)
+				require.Equal(err.Error(), structs.ErrPermissionDenied.Error())
+			}
 		}
 
 		// Try request with a valid token
@@ -959,22 +1043,26 @@ func TestHTTP_AgentListKeys_ACL(t *testing.T) {
 			respW := httptest.NewRecorder()
 			token := mock.CreatePolicyAndToken(t, state, 1007, "valid", mock.AgentPolicy(acl.PolicyWrite))
 			setToken(req, token)
-			out, err := s.Server.KeyringOperationRequest(respW, req)
-			require.Nil(err)
-			kresp := out.(structs.KeyringResponse)
-			require.Len(kresp.Keys, 1)
-			require.Contains(kresp.Keys, key1)
+			for _, srv := range s.Servers {
+				out, err := srv.KeyringOperationRequest(respW, req)
+				require.Nil(err)
+				kresp := out.(structs.KeyringResponse)
+				require.Len(kresp.Keys, 1)
+				require.Contains(kresp.Keys, key1)
+			}
 		}
 
 		// Try request with a root token
 		{
 			respW := httptest.NewRecorder()
 			setToken(req, s.RootToken)
-			out, err := s.Server.KeyringOperationRequest(respW, req)
-			require.Nil(err)
-			kresp := out.(structs.KeyringResponse)
-			require.Len(kresp.Keys, 1)
-			require.Contains(kresp.Keys, key1)
+			for _, srv := range s.Servers {
+				out, err := srv.KeyringOperationRequest(respW, req)
+				require.Nil(err)
+				kresp := out.(structs.KeyringResponse)
+				require.Len(kresp.Keys, 1)
+				require.Contains(kresp.Keys, key1)
+			}
 		}
 	})
 }
@@ -998,23 +1086,28 @@ func TestHTTP_AgentInstallKey(t *testing.T) {
 		}
 		respW := httptest.NewRecorder()
 
-		_, err = s.Server.KeyringOperationRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %s", err)
+		for _, srv := range s.Servers {
+			_, err = srv.KeyringOperationRequest(respW, req)
+			if err != nil {
+				t.Fatalf("err: %s", err)
+			}
 		}
+
 		req, err = http.NewRequest("GET", "/v1/agent/keyring/list", bytes.NewReader(b))
 		if err != nil {
 			t.Fatalf("err: %s", err)
 		}
 		respW = httptest.NewRecorder()
 
-		out, err := s.Server.KeyringOperationRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %s", err)
-		}
-		kresp := out.(structs.KeyringResponse)
-		if len(kresp.Keys) != 2 {
-			t.Fatalf("bad: %v", kresp)
+		for _, srv := range s.Servers {
+			out, err := srv.KeyringOperationRequest(respW, req)
+			if err != nil {
+				t.Fatalf("err: %s", err)
+			}
+			kresp := out.(structs.KeyringResponse)
+			if len(kresp.Keys) != 2 {
+				t.Fatalf("bad: %v", kresp)
+			}
 		}
 	})
 }
@@ -1038,9 +1131,11 @@ func TestHTTP_AgentRemoveKey(t *testing.T) {
 			t.Fatalf("err: %s", err)
 		}
 		respW := httptest.NewRecorder()
-		_, err = s.Server.KeyringOperationRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %s", err)
+		for _, srv := range s.Servers {
+			_, err = srv.KeyringOperationRequest(respW, req)
+			if err != nil {
+				t.Fatalf("err: %s", err)
+			}
 		}
 
 		req, err = http.NewRequest("GET", "/v1/agent/keyring/remove", bytes.NewReader(b))
@@ -1048,8 +1143,10 @@ func TestHTTP_AgentRemoveKey(t *testing.T) {
 			t.Fatalf("err: %s", err)
 		}
 		respW = httptest.NewRecorder()
-		if _, err = s.Server.KeyringOperationRequest(respW, req); err != nil {
-			t.Fatalf("err: %s", err)
+		for _, srv := range s.Servers {
+			if _, err = srv.KeyringOperationRequest(respW, req); err != nil {
+				t.Fatalf("err: %s", err)
+			}
 		}
 
 		req, err = http.NewRequest("GET", "/v1/agent/keyring/list", nil)
@@ -1057,13 +1154,15 @@ func TestHTTP_AgentRemoveKey(t *testing.T) {
 			t.Fatalf("err: %s", err)
 		}
 		respW = httptest.NewRecorder()
-		out, err := s.Server.KeyringOperationRequest(respW, req)
-		if err != nil {
-			t.Fatalf("err: %s", err)
-		}
-		kresp := out.(structs.KeyringResponse)
-		if len(kresp.Keys) != 1 {
-			t.Fatalf("bad: %v", kresp)
+		for _, srv := range s.Servers {
+			out, err := srv.KeyringOperationRequest(respW, req)
+			if err != nil {
+				t.Fatalf("err: %s", err)
+			}
+			kresp := out.(structs.KeyringResponse)
+			if len(kresp.Keys) != 1 {
+				t.Fatalf("bad: %v", kresp)
+			}
 		}
 	})
 }
@@ -1080,17 +1179,19 @@ func TestHTTP_AgentHealth_Ok(t *testing.T) {
 			require.Nil(err)
 
 			respW := httptest.NewRecorder()
-			healthI, err := s.Server.HealthRequest(respW, req)
-			require.Nil(err)
-			require.Equal(http.StatusOK, respW.Code)
-			require.NotNil(healthI)
-			health := healthI.(*healthResponse)
-			require.NotNil(health.Client)
-			require.True(health.Client.Ok)
-			require.Equal("ok", health.Client.Message)
-			require.NotNil(health.Server)
-			require.True(health.Server.Ok)
-			require.Equal("ok", health.Server.Message)
+			for _, srv := range s.Servers {
+				healthI, err := srv.HealthRequest(respW, req)
+				require.Nil(err)
+				require.Equal(http.StatusOK, respW.Code)
+				require.NotNil(healthI)
+				health := healthI.(*healthResponse)
+				require.NotNil(health.Client)
+				require.True(health.Client.Ok)
+				require.Equal("ok", health.Client.Message)
+				require.NotNil(health.Server)
+				require.True(health.Server.Ok)
+				require.Equal("ok", health.Server.Message)
+			}
 		}
 
 		// type=client
@@ -1099,15 +1200,17 @@ func TestHTTP_AgentHealth_Ok(t *testing.T) {
 			require.Nil(err)
 
 			respW := httptest.NewRecorder()
-			healthI, err := s.Server.HealthRequest(respW, req)
-			require.Nil(err)
-			require.Equal(http.StatusOK, respW.Code)
-			require.NotNil(healthI)
-			health := healthI.(*healthResponse)
-			require.NotNil(health.Client)
-			require.True(health.Client.Ok)
-			require.Equal("ok", health.Client.Message)
-			require.Nil(health.Server)
+			for _, srv := range s.Servers {
+				healthI, err := srv.HealthRequest(respW, req)
+				require.Nil(err)
+				require.Equal(http.StatusOK, respW.Code)
+				require.NotNil(healthI)
+				health := healthI.(*healthResponse)
+				require.NotNil(health.Client)
+				require.True(health.Client.Ok)
+				require.Equal("ok", health.Client.Message)
+				require.Nil(health.Server)
+			}
 		}
 
 		// type=server
@@ -1116,15 +1219,17 @@ func TestHTTP_AgentHealth_Ok(t *testing.T) {
 			require.Nil(err)
 
 			respW := httptest.NewRecorder()
-			healthI, err := s.Server.HealthRequest(respW, req)
-			require.Nil(err)
-			require.Equal(http.StatusOK, respW.Code)
-			require.NotNil(healthI)
-			health := healthI.(*healthResponse)
-			require.NotNil(health.Server)
-			require.True(health.Server.Ok)
-			require.Equal("ok", health.Server.Message)
-			require.Nil(health.Client)
+			for _, srv := range s.Servers {
+				healthI, err := srv.HealthRequest(respW, req)
+				require.Nil(err)
+				require.Equal(http.StatusOK, respW.Code)
+				require.NotNil(healthI)
+				health := healthI.(*healthResponse)
+				require.NotNil(health.Server)
+				require.True(health.Server.Ok)
+				require.Equal("ok", health.Server.Message)
+				require.Nil(health.Client)
+			}
 		}
 
 		// type=client&type=server
@@ -1133,17 +1238,19 @@ func TestHTTP_AgentHealth_Ok(t *testing.T) {
 			require.Nil(err)
 
 			respW := httptest.NewRecorder()
-			healthI, err := s.Server.HealthRequest(respW, req)
-			require.Nil(err)
-			require.Equal(http.StatusOK, respW.Code)
-			require.NotNil(healthI)
-			health := healthI.(*healthResponse)
-			require.NotNil(health.Client)
-			require.True(health.Client.Ok)
-			require.Equal("ok", health.Client.Message)
-			require.NotNil(health.Server)
-			require.True(health.Server.Ok)
-			require.Equal("ok", health.Server.Message)
+			for _, srv := range s.Servers {
+				healthI, err := srv.HealthRequest(respW, req)
+				require.Nil(err)
+				require.Equal(http.StatusOK, respW.Code)
+				require.NotNil(healthI)
+				health := healthI.(*healthResponse)
+				require.NotNil(health.Client)
+				require.True(health.Client.Ok)
+				require.Equal("ok", health.Client.Message)
+				require.NotNil(health.Server)
+				require.True(health.Server.Ok)
+				require.Equal("ok", health.Server.Message)
+			}
 		}
 	})
 }
@@ -1168,15 +1275,17 @@ func TestHTTP_AgentHealth_BadServer(t *testing.T) {
 		require.Nil(err)
 
 		respW := httptest.NewRecorder()
-		healthI, err := s.Server.HealthRequest(respW, req)
-		require.Nil(err)
-		require.Equal(http.StatusOK, respW.Code)
-		require.NotNil(healthI)
-		health := healthI.(*healthResponse)
-		require.NotNil(health.Client)
-		require.True(health.Client.Ok)
-		require.Equal("ok", health.Client.Message)
-		require.Nil(health.Server)
+		for _, srv := range s.Servers {
+			healthI, err := srv.HealthRequest(respW, req)
+			require.Nil(err)
+			require.Equal(http.StatusOK, respW.Code)
+			require.NotNil(healthI)
+			health := healthI.(*healthResponse)
+			require.NotNil(health.Client)
+			require.True(health.Client.Ok)
+			require.Equal("ok", health.Client.Message)
+			require.Nil(health.Server)
+		}
 	}
 
 	// type=server means server is considered unhealthy
@@ -1185,12 +1294,14 @@ func TestHTTP_AgentHealth_BadServer(t *testing.T) {
 		require.Nil(err)
 
 		respW := httptest.NewRecorder()
-		_, err = s.Server.HealthRequest(respW, req)
-		require.NotNil(err)
-		httpErr, ok := err.(HTTPCodedError)
-		require.True(ok)
-		require.Equal(500, httpErr.Code())
-		require.Equal(`{"server":{"ok":false,"message":"server not enabled"}}`, err.Error())
+		for _, srv := range s.Servers {
+			_, err = srv.HealthRequest(respW, req)
+			require.NotNil(err)
+			httpErr, ok := err.(HTTPCodedError)
+			require.True(ok)
+			require.Equal(500, httpErr.Code())
+			require.Equal(`{"server":{"ok":false,"message":"server not enabled"}}`, err.Error())
+		}
 	}
 }
 
@@ -1211,15 +1322,17 @@ func TestHTTP_AgentHealth_BadClient(t *testing.T) {
 			require.Nil(err)
 
 			respW := httptest.NewRecorder()
-			healthI, err := s.Server.HealthRequest(respW, req)
-			require.Nil(err)
-			require.Equal(http.StatusOK, respW.Code)
-			require.NotNil(healthI)
-			health := healthI.(*healthResponse)
-			require.NotNil(health.Server)
-			require.True(health.Server.Ok)
-			require.Equal("ok", health.Server.Message)
-			require.Nil(health.Client)
+			for _, srv := range s.Servers {
+				healthI, err := srv.HealthRequest(respW, req)
+				require.Nil(err)
+				require.Equal(http.StatusOK, respW.Code)
+				require.NotNil(healthI)
+				health := healthI.(*healthResponse)
+				require.NotNil(health.Server)
+				require.True(health.Server.Ok)
+				require.Equal("ok", health.Server.Message)
+				require.Nil(health.Client)
+			}
 		}
 
 		// type=client means client is considered unhealthy
@@ -1228,12 +1341,14 @@ func TestHTTP_AgentHealth_BadClient(t *testing.T) {
 			require.Nil(err)
 
 			respW := httptest.NewRecorder()
-			_, err = s.Server.HealthRequest(respW, req)
-			require.NotNil(err)
-			httpErr, ok := err.(HTTPCodedError)
-			require.True(ok)
-			require.Equal(500, httpErr.Code())
-			require.Equal(`{"client":{"ok":false,"message":"client not enabled"}}`, err.Error())
+			for _, srv := range s.Servers {
+				_, err = srv.HealthRequest(respW, req)
+				require.NotNil(err)
+				httpErr, ok := err.(HTTPCodedError)
+				require.True(ok)
+				require.Equal(500, httpErr.Code())
+				require.Equal(`{"client":{"ok":false,"message":"client not enabled"}}`, err.Error())
+			}
 		}
 	})
 }
@@ -1384,7 +1499,7 @@ func TestHTTP_XSS_Monitor(t *testing.T) {
 			s := makeHTTPServer(t, nil)
 			defer s.Shutdown()
 
-			path := fmt.Sprintf("%s/v1/agent/monitor?error_level=error&plain=%t", s.HTTPAddr(), !tc.JSON)
+			path := fmt.Sprintf("%s/v1/agent/monitor?error_level=error&plain=%t", s.HTTPAddrs()[0], !tc.JSON)
 			req, err := http.NewRequest("GET", path, nil)
 			require.NoError(t, err)
 			resp := NewFakeRW()
@@ -1394,7 +1509,7 @@ func TestHTTP_XSS_Monitor(t *testing.T) {
 
 			errCh := make(chan error, 1)
 			go func() {
-				_, err := s.Server.AgentMonitor(resp, req)
+				_, err := s.Servers[0].AgentMonitor(resp, req)
 				errCh <- err
 			}()
 
@@ -1403,7 +1518,7 @@ func TestHTTP_XSS_Monitor(t *testing.T) {
 		OUTER:
 			for {
 				// Log a needle and look for it in the response haystack
-				s.Server.logger.Error(tc.Logline)
+				s.Servers[0].logger.Error(tc.Logline)
 
 				select {
 				case <-time.After(30 * time.Millisecond):
@@ -1453,7 +1568,7 @@ func TestHTTP_XSS_Monitor(t *testing.T) {
 
 			// Close response writer and log to make AgentMonitor exit
 			resp.Close()
-			s.Server.logger.Error("log again to force a write that detects the closed connection")
+			s.Servers[0].logger.Error("log again to force a write that detects the closed connection")
 			select {
 			case err := <-errCh:
 				require.EqualError(t, closedErr, err.Error())
